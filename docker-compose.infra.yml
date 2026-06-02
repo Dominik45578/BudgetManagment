@@ -1,0 +1,41 @@
+# docker-compose.infra.yml
+# Infrastructure servers — Docker Hub images
+# Start first: docker-compose -f docker-compose.infra.yml up -d
+name: budget-infrastructure
+networks:
+  budget-network:
+    external: true
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: budget-db
+    networks:
+      - budget-network
+    environment:
+      POSTGRES_DB: budget_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d budget_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    image: nginx:alpine
+    container_name: budget-frontend
+    networks:
+      - budget-network
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  pgdata:

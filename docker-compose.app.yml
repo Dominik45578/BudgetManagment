@@ -1,0 +1,67 @@
+# docker-compose.app.yml
+# Application services — custom builds
+# Start second: docker-compose -f docker-compose.app.yml up -d --build
+name: budget-application
+networks:
+  budget-network:
+    external: true
+
+services:
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: budget-eureka
+    networks:
+      - budget-network
+    ports:
+      - "8761:8761"
+    environment:
+      VIRTUAL_THREADS_ENABLED: "true"
+      ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: budget-gateway
+    networks:
+      - budget-network
+    ports:
+      - "8080:8080"
+    environment:
+      VIRTUAL_THREADS_ENABLED: "true"
+      EUREKA_CLIENT_SERVICE_URL: http://eureka-server:8761/eureka/
+      ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  budget-service:
+    build:
+      context: .
+      dockerfile: budget-service/Dockerfile
+    deploy:
+      replicas: 2
+    networks:
+      - budget-network
+    expose:
+      - "8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      VIRTUAL_THREADS_ENABLED: "true"
+      DB_URL: jdbc:postgresql://budget-db:5432/budget_db
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      EUREKA_CLIENT_SERVICE_URL: http://eureka-server:8761/eureka/
+      FLYWAY_ENABLED: "true"
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
