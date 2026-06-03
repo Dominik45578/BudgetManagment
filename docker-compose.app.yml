@@ -19,6 +19,8 @@ services:
     environment:
       VIRTUAL_THREADS_ENABLED: "true"
       ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
+      EUREKA_USER: ${EUREKA_USER:-eureka}
+      EUREKA_PASSWORD: ${EUREKA_PASSWORD:-eureka123}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
       interval: 10s
@@ -36,7 +38,7 @@ services:
       - "8080:8080"
     environment:
       VIRTUAL_THREADS_ENABLED: "true"
-      EUREKA_CLIENT_SERVICE_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL: http://${EUREKA_USER:-eureka}:${EUREKA_PASSWORD:-eureka123}@eureka-server:8761/eureka/
       ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
     depends_on:
       eureka-server:
@@ -58,10 +60,11 @@ services:
       DB_URL: jdbc:postgresql://budget-db:5432/budget_db
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      EUREKA_CLIENT_SERVICE_URL: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_SERVICE_URL: http://${EUREKA_USER:-eureka}:${EUREKA_PASSWORD:-eureka123}@eureka-server:8761/eureka/
       FLYWAY_ENABLED: "true"
       FLYWAY_BASELINE_ON_MIGRATE: "true"
       ACTUATOR_EXPOSE_ENDPOINTS: "health,info,metrics,prometheus"
     depends_on:
       eureka-server:
         condition: service_healthy
+
