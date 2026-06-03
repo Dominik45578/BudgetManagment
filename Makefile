@@ -27,29 +27,19 @@ up: infra app obs
 	@echo ""
 
 infra-down:
-	docker-compose -f docker-compose.infra.yml down 2>/dev/null || true
+	docker-compose -f docker-compose.infra.yml down
 
 app-down:
-	docker-compose -f docker-compose.app.yml down 2>/dev/null || true
+	docker-compose -f docker-compose.app.yml down
 
 obs-down:
-	docker-compose -f docker-compose.observability.yml down 2>/dev/null || true
+	docker-compose -f docker-compose.observability.yml down
 
 down: obs-down app-down infra-down
 
 erase:
-	@printf "WARNING: This will stop all containers, delete the shared network, and prune all volumes. Proceed? [y/N]: " && read ans; \
-	if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-		echo "Stopping all services..."; \
-		$(MAKE) down; \
-		echo "Removing shared network..."; \
-		docker network rm budget-network 2>/dev/null || true; \
-		echo "Pruning docker volumes..."; \
-		docker volume prune -f; \
-		echo "Erase completed successfully."; \
-	else \
-		echo "Operation cancelled."; \
-	fi
+	@powershell -Command "$$ans = Read-Host 'WARNING: This will stop all containers, delete the shared network, and prune all volumes. Proceed? (y/N)'; if ($$ans -match '^[yY]$') { Write-Host 'Stopping all services...'; & '$(MAKE)' down; Write-Host 'Removing shared network...'; & docker network rm budget-network; Write-Host 'Pruning docker volumes...'; & docker volume prune -f; Write-Host 'Erase completed successfully.' } else { Write-Host 'Operation cancelled.' }"
+
 
 logs:
 	docker-compose -f docker-compose.app.yml logs -f

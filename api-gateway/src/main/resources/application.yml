@@ -4,20 +4,14 @@ server:
 spring:
   application:
     name: api-gateway
-  threads:
-    virtual:
-      enabled: ${VIRTUAL_THREADS_ENABLED:true}
   cloud:
     gateway:
-      server:
-        webflux:
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
-          # CORS handled globally via SecurityConfig.java (CorsConfigurationSource bean)
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
 eureka:
   client:

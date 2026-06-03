@@ -12,21 +12,6 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * WebFlux security configuration for the API Gateway.
- *
- * <p>Current setup: all endpoints are permitted (no authentication required).
- * This is intentional — the security filter chain is in place and ready for
- * JWT/OAuth2 integration. When the time comes, changing {@code permitAll()}
- * to {@code authenticated()} plus adding an OAuth2 resource server is a
- * single-class change with zero structural refactoring.</p>
- *
- * <p>CORS is configured to allow the frontend SPA ({@code localhost:3000})
- * and the Swagger UI ({@code localhost:8080}) to communicate with the Gateway.</p>
- *
- * <p>CSRF is disabled because this is a stateless REST API — no server-side
- * sessions, no cookies for authentication. Every request is self-contained.</p>
- */
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
