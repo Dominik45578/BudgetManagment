@@ -12,18 +12,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.Instant;
 
-/**
- * Global gateway filter that logs the duration of every proxied request.
- *
- * <p>Captures the start time before the downstream call and calculates
- * the elapsed duration after the response is committed. This provides
- * a single, consistent point for request-level timing across all routes,
- * independent of individual service instrumentation.</p>
- *
- * <p>Runs at {@code Ordered.HIGHEST_PRECEDENCE + 1} — immediately after
- * the {@link CorrelationIdFilter}, so the correlation ID is already
- * available in the exchange for log correlation.</p>
- */
 @Component
 public class RequestTimingFilter implements GlobalFilter, Ordered {
 

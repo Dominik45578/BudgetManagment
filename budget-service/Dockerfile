@@ -13,11 +13,7 @@
 #COPY --from=build /app/budget-service/target/*.jar app.jar
 #EXPOSE 8081
 #ENTRYPOINT ["java", "-jar", "app.jar"]
-
 FROM eclipse-temurin:21-jre
-
 WORKDIR /app
-
 COPY budget-service/target/budget-service-0.0.1.jar app.jar
-
 ENTRYPOINT ["java", "-jar", "app.jar"]

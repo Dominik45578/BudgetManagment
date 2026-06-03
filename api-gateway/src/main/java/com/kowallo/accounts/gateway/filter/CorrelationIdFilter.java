@@ -13,24 +13,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-/**
- * Global gateway filter that ensures every request passing through the gateway
- * carries a unique correlation ID for distributed tracing and log correlation.
- *
- * <p>If the incoming request already contains an {@code X-Correlation-Id} header
- * (e.g., from an upstream load balancer or external caller), that value is preserved.
- * Otherwise, a new UUID is generated and injected.</p>
- *
- * <p>The correlation ID is propagated in three places:</p>
- * <ol>
- *   <li>Forwarded to downstream services via the mutated request header</li>
- *   <li>Returned to the client via the response header</li>
- *   <li>Logged at the gateway level for observability</li>
- * </ol>
- *
- * <p>Runs at {@link Ordered#HIGHEST_PRECEDENCE} to guarantee it executes
- * before any other filter in the chain.</p>
- */
 @Component
 public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
