@@ -1,4 +1,4 @@
-.PHONY: network infra app obs up down infra-down app-down obs-down erase logs clean build
+.PHONY: network infra app obs up down build-up infra-down app-down obs-down erase logs clean build tests
 
 network:
 	docker network create budget-network
@@ -12,7 +12,35 @@ app:
 obs:
 	docker-compose -f docker-compose.observability.yml up -d
 
-up: infra app obs
+build-up:
+	@echo "Starting app building .."
+	mvnw clean package -DskipTests -B
+	@echo "Starting infra .."
+	docker-compose -f docker-compose.infra.yml up -d
+	@echo "Starting app .."
+	docker-compose -f docker-compose.app.yml up -d --build
+	@echo "Starting observability .."
+	docker-compose -f docker-compose.observability.yml up -d
+	@echo ""
+	@echo "========================================"
+	@echo "  All services started successfully!"
+	@echo "========================================"
+	@echo "  API Gateway:     http://localhost:8080"
+	@echo "  Swagger UI:      http://localhost:8080/swagger-ui.html"
+	@echo "  Frontend GUI:    http://localhost:3000"
+	@echo "  Eureka:          http://localhost:8761"
+	@echo "  Grafana:         http://localhost:3001"
+	@echo "  Prometheus:      http://localhost:9090"
+	@echo "========================================"
+	@echo ""
+
+up:
+	@echo "Starting infra .."
+	docker-compose -f docker-compose.infra.yml up -d
+	@echo "Starting app .."
+	docker-compose -f docker-compose.app.yml up -d
+	@echo "Starting observability .."
+	docker-compose -f docker-compose.observability.yml up -d
 	@echo ""
 	@echo "========================================"
 	@echo "  All services started successfully!"
@@ -38,8 +66,14 @@ obs-down:
 down: obs-down app-down infra-down
 
 erase:
-	@powershell -Command "$$ans = Read-Host 'WARNING: This will stop all containers, delete the shared network, and prune all volumes. Proceed? (y/N)'; if ($$ans -match '^[yY]$') { Write-Host 'Stopping all services...'; & '$(MAKE)' down; Write-Host 'Removing shared network...'; & docker network rm budget-network; Write-Host 'Pruning docker volumes...'; & docker volume prune -f; Write-Host 'Erase completed successfully.' } else { Write-Host 'Operation cancelled.' }"
+	-docker-compose -f docker-compose.observability.yml down
+	-docker-compose -f docker-compose.app.yml down
+	-docker-compose -f docker-compose.infra.yml down
+	-docker network rm budget-network
+	-docker volume prune -f
 
+tests:
+	mvnw test
 
 logs:
 	docker-compose -f docker-compose.app.yml logs -f

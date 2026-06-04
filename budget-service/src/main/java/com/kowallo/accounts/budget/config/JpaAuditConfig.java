@@ -1,4 +1,4 @@
-package com.kowallo.accounts.budget.common.config;
+package com.kowallo.accounts.budget.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

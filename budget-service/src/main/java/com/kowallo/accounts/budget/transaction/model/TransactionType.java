@@ -1,7 +1,10 @@
 package com.kowallo.accounts.budget.transaction.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
 
+@Schema(description = "Type of transaction: INCOME (representing earnings) or EXPENSE (representing spending)")
 public enum TransactionType {
 
     INCOME {
