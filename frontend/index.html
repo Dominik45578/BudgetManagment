@@ -1,963 +1,1264 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="pl" class="h-full bg-slate-50">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personal Budget — Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mój Budżet - System Zarządzania Finansami</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-                },
-            },
-        };
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
     </script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, sans-serif; }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.25); }
-
-        /* Glassmorphism card */
-        .glass {
-            background: rgba(255,255,255,0.04);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255,255,255,0.08);
+        /* Classic focus ring custom behavior */
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 1px #4f46e5;
         }
-        .glass-hover:hover {
-            background: rgba(255,255,255,0.07);
-            border-color: rgba(255,255,255,0.14);
-        }
-
-        /* Gradient text */
-        .gradient-text-income {
-            background: linear-gradient(135deg, #10b981, #06b6d4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .gradient-text-expense {
-            background: linear-gradient(135deg, #f43f5e, #f97316);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .gradient-text-primary {
-            background: linear-gradient(135deg, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Pulse dot */
-        .pulse-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            animation: pulse-ring 2s ease-in-out infinite;
-        }
-        @keyframes pulse-ring {
-            0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.5); }
-            70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
-            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-        }
-
-        /* Spinner */
-        .spinner {
-            width: 36px; height: 36px;
-            border: 3px solid rgba(255,255,255,.1);
-            border-top-color: #818cf8;
-            border-radius: 50%;
-            animation: spin .7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Toast */
-        .toast {
-            animation: toast-in .35s ease-out;
-        }
-        @keyframes toast-in {
-            from { transform: translateX(100%); opacity: 0; }
-            to   { transform: translateX(0);    opacity: 1; }
-        }
-        .toast-out {
-            animation: toast-out .3s ease-in forwards;
-        }
-        @keyframes toast-out {
-            to { transform: translateX(100%); opacity: 0; }
-        }
-
-        /* Fade sections */
-        .section-enter { animation: fade-up .35s ease-out; }
-        @keyframes fade-up {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Sidebar active indicator */
-        .nav-active {
-            background: rgba(255,255,255,0.08);
-            border-left: 3px solid #818cf8;
-        }
-
-        /* Budget bar */
-        .budget-bar {
-            transition: width .6s cubic-bezier(.4,0,.2,1);
-        }
-
-        /* Table row hover */
-        .row-hover:hover { background: rgba(255,255,255,0.04); }
-
-        /* Toggle switch */
-        .toggle-track { transition: background .2s; }
-        .toggle-thumb { transition: transform .2s; }
-
-        /* Number formatting helper */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex">
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased">
 
-<!-- ===== TOAST CONTAINER ===== -->
-<div id="toast-container" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none w-full max-w-sm"></div>
 
-<!-- ===== SIDEBAR ===== -->
-<aside class="fixed inset-y-0 left-0 w-64 glass border-r border-white/5 flex flex-col z-40">
-    <!-- Logo -->
-    <div class="flex items-center gap-3 px-6 py-7 border-b border-white/5">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/20">B</div>
-        <div>
-            <h1 class="text-base font-bold tracking-tight text-white">Budget</h1>
-            <p class="text-[11px] text-gray-500 font-medium tracking-wide uppercase">Dashboard</p>
+    <!-- NAVIGATION HEADER -->
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Brand logo & title -->
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xl shadow-sm">
+                        💼
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight">Mój Budżet</h1>
+                        <p class="text-xs text-slate-500">Zarządzanie finansami osobistymi</p>
+                    </div>
+                </div>
+
+                <!-- Tabs (Desktop Nav) -->
+                <nav class="hidden md:flex space-x-6 h-full items-center">
+                    <button onclick="switchTab('accounts')" id="tab-btn-accounts" class="tab-link border-b-2 border-indigo-600 text-indigo-600 px-1 py-5 text-sm font-semibold transition-colors duration-150">
+                        Konta
+                    </button>
+                    <button onclick="switchTab('transactions')" id="tab-btn-transactions" class="tab-link border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 px-1 py-5 text-sm font-semibold transition-colors duration-150">
+                        Transakcje
+                    </button>
+                    <button onclick="switchTab('summary')" id="tab-btn-summary" class="tab-link border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 px-1 py-5 text-sm font-semibold transition-colors duration-150">
+                        Podsumowania
+                    </button>
+                    <button onclick="switchTab('budgets')" id="tab-btn-budgets" class="tab-link border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 px-1 py-5 text-sm font-semibold transition-colors duration-150">
+                        Limity Budżetowe
+                    </button>
+                </nav>
+
+                <!-- Status & Refresh -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center text-xs text-slate-500 bg-slate-100 rounded-full px-3 py-1.5 border border-slate-200">
+                        <span id="api-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400 mr-2 animate-pulse"></span>
+                        <span id="api-status-text">Łączenie...</span>
+                    </div>
+                    <button onclick="refreshCurrentTab()" class="p-2 text-slate-400 hover:text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-colors duration-150" title="Odśwież dane">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4"></path></svg>
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Nav -->
-    <nav class="flex-1 py-4 px-3 space-y-1">
-        <button onclick="switchTab('accounts')" id="nav-accounts"
-                class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-            Accounts
-        </button>
-        <button onclick="switchTab('transactions')" id="nav-transactions"
-                class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
-            Transactions
-        </button>
-        <button onclick="switchTab('summary')" id="nav-summary"
-                class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-            Summary
-        </button>
-        <button onclick="switchTab('budgets')" id="nav-budgets"
-                class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Budgets
-        </button>
-    </nav>
-
-    <!-- Status -->
-    <div class="px-6 py-5 border-t border-white/5">
-        <div class="flex items-center gap-2">
-            <div id="api-status" class="pulse-dot bg-emerald-500"></div>
-            <span class="text-xs text-gray-500 font-medium">API Connected</span>
-        </div>
-    </div>
-</aside>
-
-<!-- ===== MAIN CONTENT ===== -->
-<main class="ml-64 flex-1 min-h-screen">
-    <!-- Top bar -->
-    <header class="sticky top-0 z-30 glass border-b border-white/5 px-8 py-4 flex items-center justify-between">
-        <div>
-            <h2 id="page-title" class="text-xl font-bold text-white">Accounts</h2>
-            <p id="page-subtitle" class="text-xs text-gray-500 mt-0.5">Manage your financial accounts</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-600" id="last-updated"></span>
-            <button onclick="refreshCurrentTab()" class="glass glass-hover px-4 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-white transition-all duration-300 flex items-center gap-2">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
-                Refresh
-            </button>
+        <!-- Mobile Nav Tabs -->
+        <div class="md:hidden border-t border-slate-100 bg-slate-50 px-4 py-2 flex justify-around">
+            <button onclick="switchTab('accounts')" id="tab-btn-accounts-mobile" class="tab-link-mobile text-indigo-600 font-semibold text-xs px-2 py-1">Konta</button>
+            <button onclick="switchTab('transactions')" id="tab-btn-transactions-mobile" class="tab-link-mobile text-slate-500 font-semibold text-xs px-2 py-1">Transakcje</button>
+            <button onclick="switchTab('summary')" id="tab-btn-summary-mobile" class="tab-link-mobile text-slate-500 font-semibold text-xs px-2 py-1">Podsumowania</button>
+            <button onclick="switchTab('budgets')" id="tab-btn-budgets-mobile" class="tab-link-mobile text-slate-500 font-semibold text-xs px-2 py-1">Limity</button>
         </div>
     </header>
 
-    <div class="p-8">
-        <!-- LOADING STATE -->
-        <div id="loading" class="hidden flex flex-col items-center justify-center py-24">
-            <div class="spinner"></div>
-            <p class="mt-4 text-sm text-gray-500">Loading data…</p>
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- LOADING SPINNER -->
+        <div id="loading" class="hidden flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent"></div>
+            <span class="ml-3 text-slate-500 text-sm font-medium">Ładowanie danych...</span>
         </div>
 
-        <!-- ===== ACCOUNTS TAB ===== -->
-        <section id="tab-accounts" class="section-enter hidden">
-            <!-- Action bar -->
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-white">Your Accounts</h3>
-                <div class="flex items-center gap-3">
-                    <button onclick="exportCsv()" class="glass glass-hover px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-white transition-all duration-300 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                        Export CSV
-                    </button>
-                    <button onclick="toggleModal('account-modal')" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-5 py-2.5 rounded-xl text-xs font-semibold text-white transition-all duration-300 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        New Account
+        <!-- TAB: ACCOUNTS -->
+        <section id="tab-accounts" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Twoje Konta</h2>
+                    <p class="text-sm text-slate-500 mt-1">Zarządzaj kontami finansowymi i sprawdzaj ich aktualne salda.</p>
+                </div>
+                <div>
+                    <button onclick="toggleModal('account-modal')" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg px-4 py-2.5 text-sm shadow-sm transition-colors duration-150">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Nowe Konto
                     </button>
                 </div>
             </div>
 
-            <!-- Accounts Grid -->
-            <div id="accounts-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                <!-- Populated by JS -->
-            </div>
-            <div id="accounts-empty" class="hidden text-center py-20">
-                <svg class="w-16 h-16 mx-auto text-gray-700 mb-4" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-                <p class="text-gray-500 text-sm">No accounts yet. Create your first account to get started.</p>
-            </div>
-        </section>
-
-        <!-- ===== TRANSACTIONS TAB ===== -->
-        <section id="tab-transactions" class="section-enter hidden">
-            <!-- Filters -->
-            <div class="glass rounded-2xl p-5 mb-6">
-                <div class="flex flex-wrap items-end gap-4">
-                    <div class="flex-1 min-w-[160px]">
-                        <label class="block text-xs font-medium text-gray-500 mb-1.5">Account</label>
-                        <select id="filter-account" onchange="loadTransactions()" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all">
-                            <option value="">All Accounts</option>
-                        </select>
-                    </div>
-                    <div class="min-w-[140px]">
-                        <label class="block text-xs font-medium text-gray-500 mb-1.5">From</label>
-                        <input type="date" id="filter-from" onchange="loadTransactions()" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
-                    </div>
-                    <div class="min-w-[140px]">
-                        <label class="block text-xs font-medium text-gray-500 mb-1.5">To</label>
-                        <input type="date" id="filter-to" onchange="loadTransactions()" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
-                    </div>
-                    <div class="min-w-[160px]">
-                        <label class="block text-xs font-medium text-gray-500 mb-1.5">Category</label>
-                        <select id="filter-category" onchange="loadTransactions()" class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                            <option value="">All Categories</option>
-                            <option>SALARY</option><option>FOOD</option><option>TRANSPORT</option>
-                            <option>ENTERTAINMENT</option><option>UTILITIES</option><option>HEALTH</option>
-                            <option>EDUCATION</option><option>SHOPPING</option><option>OTHER</option>
-                        </select>
-                    </div>
-                    <button onclick="clearFilters()" class="px-4 py-2.5 rounded-xl text-xs font-medium text-gray-500 hover:text-white hover:bg-white/5 transition-all duration-200">Clear</button>
-                </div>
+            <!-- Grid of Accounts -->
+            <div id="accounts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards injected here -->
             </div>
 
-            <!-- Action bar -->
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-white">Recent Transactions</h3>
-                <button onclick="toggleModal('transaction-modal')" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-5 py-2.5 rounded-xl text-xs font-semibold text-white transition-all duration-300 shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    New Transaction
+            <!-- Empty State -->
+            <div id="accounts-empty" class="hidden text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl p-8">
+                <span class="text-4xl block mb-3">💳</span>
+                <h3 class="text-lg font-bold text-slate-900">Brak zarejestrowanych kont</h3>
+                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">Utwórz pierwsze konto (np. "Główne", "Oszczędnościowe"), aby zacząć rejestrować przychody i wydatki.</p>
+                <button onclick="toggleModal('account-modal')" class="mt-4 inline-flex items-center text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
+                    Stwórz konto teraz &rarr;
                 </button>
             </div>
-
-            <!-- Transactions Table -->
-            <div class="glass rounded-2xl overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-white/5">
-                            <th class="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                            <th class="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
-                            <th class="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="text-right px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th class="text-right px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-16"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactions-body">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
-                <div id="transactions-empty" class="hidden text-center py-16">
-                    <p class="text-gray-500 text-sm">No transactions found.</p>
-                </div>
-            </div>
         </section>
 
-        <!-- ===== SUMMARY TAB ===== -->
-        <section id="tab-summary" class="section-enter hidden">
-            <!-- Account filter for summary -->
-            <div class="mb-6">
-                <select id="summary-account" onchange="loadSummary()" class="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <option value="">All Accounts</option>
-                </select>
-            </div>
-
-            <!-- Metric Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                <div class="glass rounded-2xl p-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Income</p>
-                    <p id="summary-income" class="text-3xl font-extrabold gradient-text-income">$0.00</p>
-                    <div class="mt-3 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"/></svg>
-                        <span class="text-xs text-emerald-400 font-medium">Income</span>
-                    </div>
-                </div>
-                <div class="glass rounded-2xl p-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-orange-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Total Expenses</p>
-                    <p id="summary-expenses" class="text-3xl font-extrabold gradient-text-expense">$0.00</p>
-                    <div class="mt-3 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 4.5l15 15m0 0V8.25m0 11.25H8.25"/></svg>
-                        <span class="text-xs text-rose-400 font-medium">Expenses</span>
-                    </div>
-                </div>
-                <div class="glass rounded-2xl p-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Net Balance</p>
-                    <p id="summary-net" class="text-3xl font-extrabold gradient-text-primary">$0.00</p>
-                    <div class="mt-3 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/></svg>
-                        <span class="text-xs text-indigo-400 font-medium">Net</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Category Breakdown -->
-            <div class="glass rounded-2xl p-6">
-                <h3 class="text-base font-semibold text-white mb-5">Category Breakdown</h3>
-                <div id="category-breakdown" class="space-y-4">
-                    <!-- Populated by JS -->
-                </div>
-                <div id="category-empty" class="hidden text-center py-10">
-                    <p class="text-gray-500 text-sm">No transaction data to summarize.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ===== BUDGETS TAB ===== -->
-        <section id="tab-budgets" class="section-enter hidden">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-white">Budget Limits</h3>
-                <button onclick="toggleModal('budget-modal')" class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 px-5 py-2.5 rounded-xl text-xs font-semibold text-white transition-all duration-300 shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    Set Budget
-                </button>
-            </div>
-
-            <div id="budgets-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                <!-- Populated by JS -->
-            </div>
-            <div id="budgets-empty" class="hidden text-center py-20">
-                <svg class="w-16 h-16 mx-auto text-gray-700 mb-4" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <p class="text-gray-500 text-sm">No budget limits set. Start by setting a category budget.</p>
-            </div>
-        </section>
-    </div>
-</main>
-
-<!-- ===== ACCOUNT MODAL ===== -->
-<div id="account-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleModal('account-modal')"></div>
-    <div class="relative glass rounded-2xl p-7 w-full max-w-md mx-4 shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-5">Create Account</h3>
-        <form id="account-form" onsubmit="createAccount(event)" class="space-y-4">
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5">Account Name</label>
-                <input type="text" id="acc-name" required minlength="2" maxlength="100"
-                       class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                       placeholder="e.g. Main Checking" />
-            </div>
-            <div class="flex gap-3 pt-2">
-                <button type="button" onclick="toggleModal('account-modal')" class="flex-1 glass glass-hover py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all">Cancel</button>
-                <button type="submit" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-indigo-500/20">Create</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ===== TRANSACTION MODAL ===== -->
-<div id="transaction-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleModal('transaction-modal')"></div>
-    <div class="relative glass rounded-2xl p-7 w-full max-w-lg mx-4 shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-5">New Transaction</h3>
-        <form id="transaction-form" onsubmit="createTransaction(event)" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Account</label>
-                    <select id="txn-account" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                        <option value="">Select account…</option>
-                    </select>
+        <!-- TAB: TRANSACTIONS -->
+        <section id="tab-transactions" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Transakcje</h2>
+                    <p class="text-sm text-slate-500 mt-1">Lista wszystkich operacji finansowych na Twoich kontach.</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Amount</label>
-                    <input type="number" id="txn-amount" required min="0.01" step="0.01"
-                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                           placeholder="0.00" />
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Type</label>
-                    <div class="flex bg-white/5 border border-white/10 rounded-xl overflow-hidden h-[46px]">
-                        <button type="button" id="type-income" onclick="setTxnType('INCOME')"
-                                class="flex-1 text-sm font-medium transition-all duration-200 text-gray-500">INCOME</button>
-                        <button type="button" id="type-expense" onclick="setTxnType('EXPENSE')"
-                                class="flex-1 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-rose-500 to-orange-500 text-white">EXPENSE</button>
-                    </div>
-                    <input type="hidden" id="txn-type" value="EXPENSE" />
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
-                    <select id="txn-category" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                        <option value="">Select…</option>
-                        <option>SALARY</option><option>FOOD</option><option>TRANSPORT</option>
-                        <option>ENTERTAINMENT</option><option>UTILITIES</option><option>HEALTH</option>
-                        <option>EDUCATION</option><option>SHOPPING</option><option>OTHER</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Date</label>
-                    <input type="date" id="txn-date" required
-                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
-                </div>
-                <div class="col-span-2">
-                    <label class="block text-xs font-medium text-gray-400 mb-1.5">Description</label>
-                    <input type="text" id="txn-description" maxlength="255"
-                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                           placeholder="Optional description" />
-                </div>
-            </div>
-            <div class="flex gap-3 pt-2">
-                <button type="button" onclick="toggleModal('transaction-modal')" class="flex-1 glass glass-hover py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all">Cancel</button>
-                <button type="submit" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-indigo-500/20">Create</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ===== BUDGET MODAL ===== -->
-<div id="budget-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleModal('budget-modal')"></div>
-    <div class="relative glass rounded-2xl p-7 w-full max-w-md mx-4 shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-5">Set Budget Limit</h3>
-        <form id="budget-form" onsubmit="createBudget(event)" class="space-y-4">
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5">Account</label>
-                <select id="budget-account" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <option value="">Select account…</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
-                <select id="budget-category" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all">
-                    <option value="">Select…</option>
-                    <option>FOOD</option><option>TRANSPORT</option><option>ENTERTAINMENT</option>
-                    <option>UTILITIES</option><option>HEALTH</option><option>EDUCATION</option>
-                    <option>SHOPPING</option><option>OTHER</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-400 mb-1.5">Monthly Limit</label>
-                <input type="number" id="budget-limit" required min="0.01" step="0.01"
-                       class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                       placeholder="500.00" />
-            </div>
-            <div class="flex gap-3 pt-2">
-                <button type="button" onclick="toggleModal('budget-modal')" class="flex-1 glass glass-hover py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all">Cancel</button>
-                <button type="submit" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-indigo-500/20">Save</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ===== CONFIRM MODAL ===== -->
-<div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleModal('confirm-modal')"></div>
-    <div class="relative glass rounded-2xl p-7 w-full max-w-sm mx-4 shadow-2xl text-center">
-        <svg class="w-12 h-12 mx-auto text-rose-400 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-        <h3 class="text-lg font-bold text-white mb-2">Confirm Delete</h3>
-        <p id="confirm-text" class="text-sm text-gray-400 mb-6">Are you sure you want to delete this item?</p>
-        <div class="flex gap-3">
-            <button onclick="toggleModal('confirm-modal')" class="flex-1 glass glass-hover py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all">Cancel</button>
-            <button id="confirm-btn" class="flex-1 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-rose-500/20">Delete</button>
-        </div>
-    </div>
-</div>
-
-<!-- ===== JAVASCRIPT ===== -->
-<script>
-(function () {
-    'use strict';
-
-    /* ───── Configuration ───── */
-    const API_BASE = 'http://localhost:8080';
-    let currentTab = 'accounts';
-    let accountsCache = [];
-    let txnTypeSelected = 'EXPENSE';
-
-    /* ───── Tab Metadata ───── */
-    const TAB_META = {
-        accounts:     { title: 'Accounts',     subtitle: 'Manage your financial accounts' },
-        transactions: { title: 'Transactions', subtitle: 'Track income and expenses' },
-        summary:      { title: 'Summary',      subtitle: 'Financial overview and insights' },
-        budgets:      { title: 'Budgets',       subtitle: 'Category spending limits' },
-    };
-
-    /* ───── Utility ───── */
-    function $(sel) { return document.querySelector(sel); }
-    function $$(sel) { return document.querySelectorAll(sel); }
-    function fmt(n) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n ?? 0); }
-    function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; }
-
-    /* ───── Toast Notifications ───── */
-    window.toast = function (message, type = 'success') {
-        const container = $('#toast-container');
-        const colors = {
-            success: 'from-emerald-500 to-cyan-500',
-            error:   'from-rose-500 to-orange-500',
-            info:    'from-indigo-500 to-purple-500',
-        };
-        const icons = {
-            success: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
-            error:   '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>',
-            info:    '<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>',
-        };
-        const el = document.createElement('div');
-        el.className = `toast pointer-events-auto flex items-center gap-3 bg-gradient-to-r ${colors[type]} px-5 py-3.5 rounded-xl shadow-2xl text-sm font-medium text-white max-w-sm`;
-        el.innerHTML = `<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">${icons[type]}</svg><span>${message}</span>`;
-        container.appendChild(el);
-        setTimeout(() => { el.classList.add('toast-out'); setTimeout(() => el.remove(), 300); }, 3500);
-    };
-
-    /* ───── Loading State ───── */
-    function showLoading() { $('#loading').classList.remove('hidden'); }
-    function hideLoading() { $('#loading').classList.add('hidden'); }
-
-    /* ───── API Helper ───── */
-    async function api(path, opts = {}) {
-        const url = `${API_BASE}${path}`;
-        const config = { headers: { 'Content-Type': 'application/json' }, ...opts };
-        try {
-            const res = await fetch(url, config);
-            if (!res.ok) {
-                let errMsg = `Error ${res.status}`;
-                try {
-                    const problem = await res.json();
-                    errMsg = problem.detail || problem.title || errMsg;
-                } catch (_) {}
-                throw new Error(errMsg);
-            }
-            if (res.status === 204) return null;
-            const ct = res.headers.get('content-type') || '';
-            if (ct.includes('json')) return res.json();
-            return null;
-        } catch (err) {
-            if (err.message === 'Failed to fetch') {
-                updateApiStatus(false);
-                throw new Error('Cannot connect to API. Is the server running?');
-            }
-            throw err;
-        }
-    }
-
-    /* ───── API Status ───── */
-    function updateApiStatus(ok) {
-        const dot = $('#api-status');
-        dot.className = `pulse-dot ${ok ? 'bg-emerald-500' : 'bg-rose-500'}`;
-        dot.nextElementSibling.textContent = ok ? 'API Connected' : 'API Disconnected';
-    }
-
-    /* ───── Tab Navigation ───── */
-    window.switchTab = function (tab) {
-        currentTab = tab;
-        // Update nav
-        $$('.nav-btn').forEach(b => b.classList.remove('nav-active', 'text-white'));
-        const active = $(`#nav-${tab}`);
-        if (active) { active.classList.add('nav-active', 'text-white'); }
-        // Show section
-        $$('[id^="tab-"]').forEach(s => s.classList.add('hidden'));
-        const section = $(`#tab-${tab}`);
-        if (section) { section.classList.remove('hidden'); }
-        // Update header
-        const meta = TAB_META[tab];
-        if (meta) {
-            $('#page-title').textContent = meta.title;
-            $('#page-subtitle').textContent = meta.subtitle;
-        }
-        // Load data
-        refreshCurrentTab();
-    };
-
-    window.refreshCurrentTab = function () {
-        switch (currentTab) {
-            case 'accounts':     loadAccounts(); break;
-            case 'transactions': loadTransactions(); break;
-            case 'summary':      loadSummary(); break;
-            case 'budgets':      loadBudgets(); break;
-        }
-        $('#last-updated').textContent = `Updated ${new Date().toLocaleTimeString()}`;
-    };
-
-    /* ───── Modal Toggle ───── */
-    window.toggleModal = function (id) {
-        const modal = $(`#${id}`);
-        if (modal.classList.contains('hidden')) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        } else {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-    };
-
-    /* ───── Transaction Type Toggle ───── */
-    window.setTxnType = function (type) {
-        txnTypeSelected = type;
-        $('#txn-type').value = type;
-        const incBtn = $('#type-income');
-        const expBtn = $('#type-expense');
-        if (type === 'INCOME') {
-            incBtn.className = 'flex-1 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white';
-            expBtn.className = 'flex-1 text-sm font-medium transition-all duration-200 text-gray-500';
-        } else {
-            expBtn.className = 'flex-1 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-rose-500 to-orange-500 text-white';
-            incBtn.className = 'flex-1 text-sm font-medium transition-all duration-200 text-gray-500';
-        }
-    };
-
-    /* ───── Populate Account Selectors ───── */
-    function populateAccountSelectors(accounts) {
-        const selectors = ['#filter-account', '#txn-account', '#budget-account', '#summary-account'];
-        selectors.forEach(sel => {
-            const el = $(sel);
-            if (!el) return;
-            const current = el.value;
-            const firstOpt = el.querySelector('option');
-            el.innerHTML = '';
-            if (firstOpt) el.appendChild(firstOpt);
-            accounts.forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.name;
-                el.appendChild(opt);
-            });
-            el.value = current;
-        });
-    }
-
-    /* ───── ACCOUNTS ───── */
-    async function loadAccounts() {
-        try {
-            const accounts = await api('/api/accounts');
-            accountsCache = accounts || [];
-            updateApiStatus(true);
-            populateAccountSelectors(accountsCache);
-            renderAccounts(accountsCache);
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    }
-
-    function renderAccounts(accounts) {
-        const grid = $('#accounts-grid');
-        const empty = $('#accounts-empty');
-        if (!accounts.length) {
-            grid.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-        grid.innerHTML = accounts.map(a => `
-            <div class="glass glass-hover rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-                    </div>
-                    <button onclick="confirmDelete('account', ${a.id}, '${a.name}')"
-                            class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-rose-400 transition-all duration-200 p-1.5 rounded-lg hover:bg-rose-500/10">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                    <button onclick="openNewTransactionModal()" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg px-4 py-2.5 text-sm shadow-sm transition-colors duration-150">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Dodaj Transakcję
                     </button>
                 </div>
-                <h4 class="text-base font-semibold text-white mb-1">${a.name}</h4>
-                <p class="text-2xl font-extrabold ${a.balance >= 0 ? 'gradient-text-income' : 'gradient-text-expense'} mb-3">${fmt(a.balance)}</p>
-                <p class="text-xs text-gray-600">Created ${fmtDate(a.createdAt)}</p>
             </div>
-        `).join('');
-    }
 
-    window.createAccount = async function (e) {
-        e.preventDefault();
-        const name = $('#acc-name').value.trim();
-        if (!name) return;
-        try {
-            await api('/api/accounts', { method: 'POST', body: JSON.stringify({ name }) });
-            toast('Account created successfully');
-            toggleModal('account-modal');
-            $('#account-form').reset();
-            loadAccounts();
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    };
-
-    window.exportCsv = function () {
-        const link = document.createElement('a');
-        link.href = `${API_BASE}/api/accounts/export/csv`;
-        link.download = 'accounts.csv';
-        link.click();
-        toast('Exporting CSV…', 'info');
-    };
-
-    /* ───── TRANSACTIONS ───── */
-    async function loadTransactions() {
-        try {
-            const params = new URLSearchParams();
-            const accId = $('#filter-account')?.value;
-            const from  = $('#filter-from')?.value;
-            const to    = $('#filter-to')?.value;
-            const cat   = $('#filter-category')?.value;
-            if (accId) params.set('accountId', accId);
-            if (from)  params.set('dateFrom', from);
-            if (to)    params.set('dateTo', to);
-            if (cat)   params.set('category', cat);
-            const qs = params.toString();
-            const txns = await api(`/api/transactions${qs ? '?' + qs : ''}`);
-            updateApiStatus(true);
-            renderTransactions(txns || []);
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    }
-
-    function renderTransactions(txns) {
-        const body = $('#transactions-body');
-        const empty = $('#transactions-empty');
-        if (!txns.length) {
-            body.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-        body.innerHTML = txns.map(t => {
-            const isIncome = t.type === 'INCOME';
-            const colorClass = isIncome ? 'text-emerald-400' : 'text-rose-400';
-            const badgeBg = isIncome ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400';
-            return `
-            <tr class="border-b border-white/5 row-hover transition-colors duration-150">
-                <td class="px-5 py-4 text-gray-400 text-xs">${fmtDate(t.date)}</td>
-                <td class="px-5 py-4 text-gray-200 font-medium">${t.description || '—'}</td>
-                <td class="px-5 py-4"><span class="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/5 text-gray-400">${t.category}</span></td>
-                <td class="px-5 py-4"><span class="text-xs font-semibold px-2.5 py-1 rounded-lg ${badgeBg}">${t.type}</span></td>
-                <td class="px-5 py-4 text-right font-bold ${colorClass}">${isIncome ? '+' : '-'}${fmt(t.amount)}</td>
-                <td class="px-5 py-4 text-right">
-                    <button onclick="confirmDelete('transaction', ${t.id})"
-                            class="text-gray-600 hover:text-rose-400 transition-colors p-1 rounded-lg hover:bg-rose-500/10">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
-    }
-
-    window.createTransaction = async function (e) {
-        e.preventDefault();
-        const payload = {
-            accountId:   parseInt($('#txn-account').value),
-            amount:      parseFloat($('#txn-amount').value),
-            type:        $('#txn-type').value,
-            category:    $('#txn-category').value,
-            description: $('#txn-description').value.trim() || null,
-            date:        $('#txn-date').value,
-        };
-        if (!payload.accountId || !payload.amount || !payload.category || !payload.date) {
-            toast('Please fill all required fields', 'error');
-            return;
-        }
-        try {
-            await api('/api/transactions', { method: 'POST', body: JSON.stringify(payload) });
-            toast('Transaction created successfully');
-            toggleModal('transaction-modal');
-            $('#transaction-form').reset();
-            setTxnType('EXPENSE');
-            loadTransactions();
-            loadAccounts(); // refresh balances
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    };
-
-    window.clearFilters = function () {
-        $('#filter-account').value = '';
-        $('#filter-from').value = '';
-        $('#filter-to').value = '';
-        $('#filter-category').value = '';
-        loadTransactions();
-    };
-
-    /* ───── SUMMARY ───── */
-    async function loadSummary() {
-        try {
-            const accId = $('#summary-account')?.value;
-            const qs = accId ? `?accountId=${accId}` : '';
-            const data = await api(`/api/summary${qs}`);
-            updateApiStatus(true);
-            renderSummary(data);
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    }
-
-    function renderSummary(data) {
-        if (!data) return;
-        $('#summary-income').textContent = fmt(data.totalIncome);
-        $('#summary-expenses').textContent = fmt(data.totalExpenses);
-        $('#summary-net').textContent = fmt(data.netBalance);
-
-        const container = $('#category-breakdown');
-        const empty = $('#category-empty');
-        const categories = data.categoryBreakdown || {};
-        const entries = Object.entries(categories);
-
-        if (!entries.length) {
-            container.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-        const max = Math.max(...entries.map(([, v]) => v), 1);
-
-        container.innerHTML = entries.map(([cat, val]) => {
-            const pct = Math.round((val / max) * 100);
-            return `
-            <div class="flex items-center gap-4">
-                <span class="text-xs font-medium text-gray-400 w-28 truncate">${cat}</span>
-                <div class="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
-                    <div class="budget-bar h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style="width:${pct}%"></div>
-                </div>
-                <span class="text-sm font-bold text-gray-200 w-24 text-right">${fmt(val)}</span>
-            </div>`;
-        }).join('');
-    }
-
-    /* ───── BUDGETS ───── */
-    async function loadBudgets() {
-        try {
-            const budgets = await api('/api/budgets');
-            updateApiStatus(true);
-            renderBudgets(budgets || []);
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    }
-
-    function renderBudgets(budgets) {
-        const grid = $('#budgets-grid');
-        const empty = $('#budgets-empty');
-        if (!budgets.length) {
-            grid.innerHTML = '';
-            empty.classList.remove('hidden');
-            return;
-        }
-        empty.classList.add('hidden');
-
-        grid.innerHTML = budgets.map(b => {
-            const accountName = accountsCache.find(a => a.id === b.accountId)?.name || `Account #${b.accountId}`;
-            const spent = b.currentSpent ?? 0;
-            const limit = b.monthlyLimit ?? b.limitAmount ?? 0;
-            const pct = limit > 0 ? Math.min(Math.round((spent / limit) * 100), 100) : 0;
-            const barColor = pct >= 90 ? 'from-rose-500 to-orange-500' : pct >= 70 ? 'from-amber-500 to-yellow-500' : 'from-emerald-500 to-cyan-500';
-            return `
-            <div class="glass rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group">
-                <div class="flex items-start justify-between mb-3">
+            <!-- Filter Card -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 8.293A1 1 0 013 7.586V4z"></path></svg>
+                    Filtrowanie i kryteria
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
-                        <span class="text-xs font-medium px-2.5 py-1 rounded-lg bg-white/5 text-gray-400">${b.category}</span>
-                        <p class="text-xs text-gray-600 mt-2">${accountName}</p>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Konto</label>
+                        <select id="filter-account" onchange="loadTransactions(0)" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                            <option value="">Wszystkie konta</option>
+                        </select>
                     </div>
-                    <button onclick="confirmDelete('budget', ${b.id})"
-                            class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-rose-400 transition-all duration-200 p-1.5 rounded-lg hover:bg-rose-500/10">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Kategoria</label>
+                        <select id="filter-category" onchange="loadTransactions(0)" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                            <option value="">Wszystkie kategorie</option>
+                            <option value="SALARY">SALARY (Wynagrodzenie)</option>
+                            <option value="FOOD">FOOD (Jedzenie)</option>
+                            <option value="TRANSPORT">TRANSPORT (Transport)</option>
+                            <option value="ENTERTAINMENT">ENTERTAINMENT (Rozrywka)</option>
+                            <option value="UTILITIES">UTILITIES (Rachunki)</option>
+                            <option value="HEALTH">HEALTH (Zdrowie)</option>
+                            <option value="EDUCATION">EDUCATION (Edukacja)</option>
+                            <option value="SHOPPING">SHOPPING (Zakupy)</option>
+                            <option value="OTHER">OTHER (Inne)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Od daty</label>
+                        <input type="date" id="filter-from" onchange="loadTransactions(0)" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm form-input">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Do daty</label>
+                        <input type="date" id="filter-to" onchange="loadTransactions(0)" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm form-input">
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button onclick="clearFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                        Wyczyść filtry
                     </button>
                 </div>
-                <p class="text-xl font-extrabold text-white mb-1">${fmt(limit)}</p>
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="text-xs text-gray-500">${fmt(spent)} spent</span>
-                    <span class="text-xs text-gray-600">•</span>
-                    <span class="text-xs font-semibold ${pct >= 90 ? 'text-rose-400' : pct >= 70 ? 'text-amber-400' : 'text-emerald-400'}">${pct}%</span>
-                </div>
-                <div class="h-2 bg-white/5 rounded-full overflow-hidden">
-                    <div class="budget-bar h-full bg-gradient-to-r ${barColor} rounded-full" style="width:${pct}%"></div>
-                </div>
-            </div>`;
-        }).join('');
-    }
+            </div>
 
-    window.createBudget = async function (e) {
-        e.preventDefault();
-        const payload = {
-            accountId:  parseInt($('#budget-account').value),
-            category:   $('#budget-category').value,
-            monthlyLimit: parseFloat($('#budget-limit').value),
-        };
-        if (!payload.accountId || !payload.category || !payload.monthlyLimit) {
-            toast('Please fill all required fields', 'error');
-            return;
-        }
-        try {
-            await api('/api/budgets', { method: 'POST', body: JSON.stringify(payload) });
-            toast('Budget limit saved successfully');
-            toggleModal('budget-modal');
-            $('#budget-form').reset();
-            loadBudgets();
-        } catch (err) {
-            toast(err.message, 'error');
-        }
-    };
+            <!-- Transaction Table Card -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Konto</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Data</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Opis</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Kategoria</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Typ</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider text-right">Kwota</th>
+                                <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body" class="divide-y divide-slate-100">
+                            <!-- Transactions injected here -->
+                        </tbody>
+                    </table>
+                </div>
 
-    /* ───── Delete Confirmation ───── */
-    window.confirmDelete = function (type, id, name) {
-        const text = name ? `Delete "${name}"? This action cannot be undone.` : 'Are you sure you want to delete this item? This cannot be undone.';
-        $('#confirm-text').textContent = text;
-        const btn = $('#confirm-btn');
-        btn.onclick = async () => {
-            try {
-                const endpoints = {
-                    account:     `/api/accounts/${id}`,
-                    transaction: `/api/transactions/${id}`,
-                    budget:      `/api/budgets/${id}`,
-                };
-                await api(endpoints[type], { method: 'DELETE' });
-                toast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`);
-                toggleModal('confirm-modal');
-                refreshCurrentTab();
-                if (type === 'transaction') loadAccounts(); // refresh balances
-            } catch (err) {
-                toast(err.message, 'error');
+                <!-- Empty State -->
+                <div id="transactions-empty" class="hidden text-center py-12 text-slate-500">
+                    <span class="text-3xl block mb-2">🔍</span>
+                    <p class="font-medium text-slate-600">Nie znaleziono transakcji</p>
+                    <p class="text-xs text-slate-400 mt-1">Dostosuj filtry lub dodaj nowe transakcje do wybranego konta.</p>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200 text-xs">
+                    <div class="text-slate-500 font-medium">
+                        Pokazano <span id="txn-count-visible" class="text-slate-900 font-bold">0</span> z <span id="txn-count-total" class="text-slate-900 font-bold">0</span> transakcji
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="btn-prev-page" class="inline-flex items-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-1.5 rounded-lg shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-colors">
+                            &larr; Poprzednia
+                        </button>
+                        <span id="page-info" class="text-slate-600 font-semibold">Strona 1 z 1</span>
+                        <button id="btn-next-page" class="inline-flex items-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-1.5 rounded-lg shadow-sm disabled:opacity-50 disabled:pointer-events-none transition-colors">
+                            Następna &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: SUMMARY -->
+        <section id="tab-summary" class="hidden space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Podsumowanie Okresu</h2>
+                <p class="text-sm text-slate-500 mt-1">Szczegółowy przegląd przychodów i wydatków pogrupowanych według kategorii.</p>
+            </div>
+
+            <!-- Parameters Card -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Konto</label>
+                        <select id="summary-account" onchange="loadSummary()" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                            <option value="">Wybierz konto...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Miesiąc / Okres</label>
+                        <input type="month" id="summary-period" onchange="loadSummary()" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm form-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Request Info -->
+            <div id="summary-request-state" class="text-center py-16 bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+                <span class="text-4xl block mb-3 font-semibold">📊</span>
+                <h3 class="text-lg font-bold text-slate-900">Wybierz konto</h3>
+                <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Wybierz konto z powyższej listy rozwijanej, aby załadować sumy przychodów, wydatków oraz zestawienie kategorii.</p>
+            </div>
+
+            <!-- Summary Content (Grid + Breakdown) -->
+            <div id="summary-content" class="hidden space-y-8">
+                <!-- Sum Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 border-l-4 border-l-emerald-500">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Przychody ogółem</p>
+                        <p id="summary-income-amount" class="text-2xl font-black text-emerald-600 mt-2">0,00 zł</p>
+                        <span class="text-[10px] text-slate-400 block mt-1">Zarejestrowane wpłaty</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 border-l-4 border-l-rose-500">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Wydatki ogółem</p>
+                        <p id="summary-expenses-amount" class="text-2xl font-black text-rose-600 mt-2">0,00 zł</p>
+                        <span class="text-[10px] text-slate-400 block mt-1">Zarejestrowane koszty</span>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 border-l-4 border-l-indigo-500">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Saldo netto</p>
+                        <p id="summary-net-amount" class="text-2xl font-black text-slate-900 mt-2">0,00 zł</p>
+                        <span class="text-[10px] text-slate-400 block mt-1">Przychody minus Wydatki</span>
+                    </div>
+                </div>
+
+                <!-- Category breakdown Card -->
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                    <h3 class="text-base font-bold text-slate-950 mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
+                        <span>Wydatki według kategorii</span>
+                        <span id="summary-txn-count" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-semibold">0 transakcji</span>
+                    </h3>
+                    <div id="summary-category-list" class="space-y-5">
+                        <!-- Bars injected here -->
+                    </div>
+                    <div id="summary-category-empty" class="hidden text-center py-10 text-slate-400">
+                        Brak zarejestrowanych wydatków w wybranym okresie.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: BUDGET LIMITS -->
+        <section id="tab-budgets" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Limity Budżetowe</h2>
+                    <p class="text-sm text-slate-500 mt-1">Ustawiaj i monitoruj limity wydatków dla poszczególnych kategorii w tym miesiącu.</p>
+                </div>
+                <div>
+                    <button onclick="openNewBudgetModal()" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg px-4 py-2.5 text-sm shadow-sm transition-colors duration-150">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Ustaw Limit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Account Selector Filter -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                <div class="max-w-sm">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Konto do analizy limitów</label>
+                    <select id="filter-budget-account" onchange="loadBudgets()" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                        <option value="">Wszystkie konta</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Budgets Grid -->
+            <div id="budgets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Budget cards injected here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="budgets-empty" class="hidden text-center py-16 bg-white border border-dashed border-slate-300 rounded-xl p-8">
+                <span class="text-4xl block mb-3">🎯</span>
+                <h3 class="text-lg font-bold text-slate-900">Brak określonych limitów</h3>
+                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto font-medium">Ustawienia limitów pomagają trzymać wydatki pod kontrolą. Otrzymasz ostrzeżenie podczas zapisu nowej transakcji przekraczającej limit.</p>
+                <button onclick="openNewBudgetModal()" class="mt-4 inline-flex items-center text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
+                    Dodaj pierwszy limit &rarr;
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODALS SECTION -->
+
+    <!-- Modal: CREATE ACCOUNT -->
+    <div id="account-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full p-6 transform scale-95 transition-transform flex flex-col gap-5">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900">Dodaj Nowe Konto</h3>
+                <button onclick="toggleModal('account-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <form id="account-form" onsubmit="createAccount(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Nazwa Konta</label>
+                    <input type="text" id="acc-name" required placeholder="np. Portfel Główne, Oszczędności, Karta" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('account-modal')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition-colors">Anuluj</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow-sm transition-colors">Utwórz konto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: CREATE TRANSACTION -->
+    <div id="transaction-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6 transform scale-95 transition-transform flex flex-col gap-4">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900">Nowa Transakcja</h3>
+                <button onclick="toggleModal('transaction-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <form id="transaction-form" onsubmit="createTransaction(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Konto</label>
+                        <select id="txn-account" required class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                            <option value="">Wybierz konto...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Kwota</label>
+                        <div class="relative">
+                            <input type="number" id="txn-amount" required step="0.01" min="0.01" placeholder="0.00" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 pl-3 pr-8 text-sm font-semibold form-input">
+                            <span class="absolute right-3 top-3 text-xs text-slate-400 font-bold">PLN</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Typ</label>
+                        <div class="flex border border-slate-300 rounded-lg overflow-hidden h-[42px] bg-slate-50">
+                            <button type="button" id="type-income" onclick="setTxnType('INCOME')" class="flex-1 text-xs font-bold transition-all duration-150 text-slate-500 hover:text-slate-800">
+                                PRZYCHÓD
+                            </button>
+                            <button type="button" id="type-expense" onclick="setTxnType('EXPENSE')" class="flex-1 text-xs font-bold transition-all duration-150 bg-rose-600 text-white shadow-inner">
+                                WYDATEK
+                            </button>
+                        </div>
+                        <input type="hidden" id="txn-type" value="EXPENSE">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Kategoria</label>
+                        <input type="text" id="txn-category" list="categories-list" required placeholder="Wybierz lub wpisz..." class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Data i Czas</label>
+                        <input type="datetime-local" id="txn-date" required class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm form-input">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Opis (opcjonalny)</label>
+                        <input type="text" id="txn-description" placeholder="Dodaj krótki opis, np. Zakupy w Biedronce" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('transaction-modal')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition-colors">Anuluj</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow-sm transition-colors">Zapisz transakcję</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Datalist containing standard categories helper -->
+    <datalist id="categories-list">
+        <option value="SALARY">
+        <option value="FOOD">
+        <option value="TRANSPORT">
+        <option value="ENTERTAINMENT">
+        <option value="UTILITIES">
+        <option value="HEALTH">
+        <option value="EDUCATION">
+        <option value="SHOPPING">
+        <option value="OTHER">
+    </datalist>
+
+    <!-- Modal: SET BUDGET LIMIT -->
+    <div id="budget-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full p-6 transform scale-95 transition-transform flex flex-col gap-4">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 class="text-lg font-bold text-slate-900">Ustaw Limit Wydatków</h3>
+                <button onclick="toggleModal('budget-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <form id="budget-form" onsubmit="createBudget(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Konto</label>
+                    <select id="budget-account" required class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                        <option value="">Wybierz konto...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Kategoria</label>
+                    <input type="text" id="budget-category" list="categories-list" required placeholder="Wpisz lub wybierz..." class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm form-input">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Miesięczny Limit Kwotowy</label>
+                    <div class="relative">
+                        <input type="number" id="budget-limit" required step="0.01" min="0.01" placeholder="500.00" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 pr-8 text-sm font-semibold form-input">
+                        <span class="absolute right-3 top-3 text-xs text-slate-400 font-bold">PLN</span>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('budget-modal')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition-colors">Anuluj</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow-sm transition-colors">Zapisz limit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: CONFIRM DELETE -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-6 text-center transform scale-95 transition-transform flex flex-col gap-4">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-100 text-rose-600 text-xl font-bold">
+                ⚠️
+            </div>
+            <div>
+                <h3 class="font-bold text-lg text-slate-900">Potwierdź usunięcie</h3>
+                <p id="confirm-text" class="text-sm text-slate-500 mt-1">Czy na pewno chcesz usunąć ten element? Tej operacji nie można cofnąć.</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="toggleModal('confirm-modal')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">Anuluj</button>
+                <button id="confirm-btn" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors">Usuń</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        (function () {
+            'use strict';
+
+            // Base backend address
+            const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? `${window.location.protocol}//${window.location.hostname}:8080`
+                : 'http://localhost:8080';
+
+            // Application state
+            let currentTab = 'accounts';
+            let accountsCache = [];
+            let transactionsPage = 0;
+            const transactionsPageSize = 10;
+            let txnTypeSelected = 'EXPENSE';
+
+            // Tab metadata
+            const TAB_META = {
+                accounts: { title: 'Konta' },
+                transactions: { title: 'Transakcje' },
+                summary: { title: 'Podsumowania' },
+                budgets: { title: 'Limity budżetowe' },
+            };
+
+            // Formatting helper for currency
+            function fmtPLN(val) {
+                return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(val ?? 0);
             }
-        };
-        toggleModal('confirm-modal');
-    };
 
-    /* ───── Init ───── */
-    function init() {
-        // Set today's date as default for transaction form
-        const today = new Date().toISOString().slice(0, 10);
-        const dateInput = $('#txn-date');
-        if (dateInput) dateInput.value = today;
+            // Formatting helper for dates
+            function fmtDate(isoStr) {
+                if (!isoStr) return '—';
+                try {
+                    const d = new Date(isoStr);
+                    const dStr = d.toLocaleDateString('pl-PL', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                    const tStr = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                    return `${dStr} ${tStr}`;
+                } catch (_) {
+                    return isoStr.replace('T', ' ');
+                }
+            }
 
-        // Activate default tab
-        switchTab('accounts');
-    }
+            // Show Toast notifications
+            window.toast = function (message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div');
+                
+                let border = 'border-emerald-500';
+                let icon = '✔️';
+                
+                if (type === 'error') {
+                    border = 'border-rose-500';
+                    icon = '❌';
+                } else if (type === 'warning') {
+                    border = 'border-amber-500';
+                    icon = '⚠️';
+                }
+                
+                el.className = `flex items-center gap-3 bg-white border border-slate-200 border-l-4 ${border} p-4 rounded-lg shadow-md pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+                el.innerHTML = `
+                    <span class="text-base">${icon}</span>
+                    <p class="text-xs font-semibold text-slate-800 leading-tight">${message}</p>
+                `;
+                
+                container.appendChild(el);
+                
+                // Animate in
+                setTimeout(() => el.classList.remove('translate-y-2', 'opacity-0'), 10);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    el.classList.add('-translate-y-2', 'opacity-0');
+                    setTimeout(() => el.remove(), 300);
+                }, 4000);
+            };
 
-    // Boot
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
-</script>
+            // Show/Hide page loader
+            function showLoader() {
+                document.getElementById('loading').classList.remove('hidden');
+            }
+            function hideLoader() {
+                document.getElementById('loading').classList.add('hidden');
+            }
+
+            // API fetch wrapper with detailed error handling
+            async function api(path, opts = {}) {
+                const url = `${API_BASE}${path}`;
+                const config = {
+                    headers: { 'Content-Type': 'application/json' },
+                    ...opts
+                };
+                try {
+                    const res = await fetch(url, config);
+                    if (!res.ok) {
+                        let errMsg = `Błąd API ${res.status}`;
+                        try {
+                            const problem = await res.json();
+                            errMsg = problem.detail || problem.message || problem.title || errMsg;
+                        } catch (_) {}
+                        throw new Error(errMsg);
+                    }
+                    if (res.status === 204) return null;
+                    const ct = res.headers.get('content-type') || '';
+                    if (ct.includes('json')) return await res.json();
+                    return null;
+                } catch (err) {
+                    if (err.message === 'Failed to fetch') {
+                        setConnectionStatus(false);
+                        throw new Error('Brak połączenia z API. Upewnij się, że serwer działa na porcie 8080.');
+                    }
+                    throw err;
+                }
+            }
+
+            // Update Connection Status in Header
+            function setConnectionStatus(connected) {
+                const dot = document.getElementById('api-status-dot');
+                const text = document.getElementById('api-status-text');
+                if (connected) {
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2';
+                    text.textContent = 'API Połączone';
+                } else {
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 mr-2';
+                    text.textContent = 'Brak połączenia';
+                }
+            }
+
+            // Toggle Modals
+            window.toggleModal = function (modalId) {
+                const modal = document.getElementById(modalId);
+                if (!modal) return;
+                
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    // Focus first input if exists
+                    const input = modal.querySelector('input, select');
+                    if (input) setTimeout(() => input.focus(), 150);
+                } else {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            };
+
+            // Switch Active Navigation Tab
+            window.switchTab = function (tab) {
+                currentTab = tab;
+
+                // Update desktop nav styling
+                document.querySelectorAll('.tab-link').forEach(btn => {
+                    btn.className = 'tab-link border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 px-1 py-5 text-sm font-semibold transition-colors duration-150';
+                });
+                const activeBtn = document.getElementById(`tab-btn-${tab}`);
+                if (activeBtn) {
+                    activeBtn.className = 'tab-link border-b-2 border-indigo-600 text-indigo-600 px-1 py-5 text-sm font-semibold transition-colors duration-150';
+                }
+
+                // Update mobile nav styling
+                document.querySelectorAll('.tab-link-mobile').forEach(btn => {
+                    btn.className = 'tab-link-mobile text-slate-500 font-semibold text-xs px-2 py-1';
+                });
+                const activeMobileBtn = document.getElementById(`tab-btn-${tab}-mobile`);
+                if (activeMobileBtn) {
+                    activeMobileBtn.className = 'tab-link-mobile text-indigo-600 font-semibold text-xs px-2 py-1';
+                }
+
+                // Show/hide sections
+                document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+                const activeSec = document.getElementById(`tab-${tab}`);
+                if (activeSec) activeSec.classList.remove('hidden');
+
+                // Trigger refresh
+                refreshCurrentTab();
+            };
+
+            // Refresh Current View
+            window.refreshCurrentTab = async function () {
+                showLoader();
+                try {
+                    // Always refresh accountsCache as other tabs rely on it
+                    await fetchAccounts();
+                    
+                    if (currentTab === 'accounts') {
+                        renderAccounts();
+                    } else if (currentTab === 'transactions') {
+                        await loadTransactions(transactionsPage);
+                    } else if (currentTab === 'summary') {
+                        await loadSummary();
+                    } else if (currentTab === 'budgets') {
+                        await loadBudgets();
+                    }
+                    setConnectionStatus(true);
+                } catch (err) {
+                    toast(err.message, 'error');
+                } finally {
+                    hideLoader();
+                }
+            };
+
+            // Fetch accounts from API into cache
+            async function fetchAccounts() {
+                const res = await api('/api/v1/accounts');
+                // Backend returns Page object
+                accountsCache = res && res.content ? res.content : (Array.isArray(res) ? res : []);
+                populateDropdowns();
+            }
+
+            // Populate account selector dropdowns
+            function populateDropdowns() {
+                const selectors = ['#filter-account', '#txn-account', '#budget-account', '#summary-account', '#filter-budget-account'];
+                selectors.forEach(sel => {
+                    const el = document.querySelector(sel);
+                    if (!el) return;
+                    
+                    const currentVal = el.value;
+                    const firstOpt = el.querySelector('option');
+                    el.innerHTML = '';
+                    if (firstOpt) el.appendChild(firstOpt);
+                    
+                    accountsCache.forEach(acc => {
+                        const opt = document.createElement('option');
+                        opt.value = acc.id;
+                        opt.textContent = acc.name;
+                        el.appendChild(opt);
+                    });
+                    
+                    el.value = currentVal;
+                });
+            }
+
+            /* --- ACCOUNTS VIEW --- */
+            function renderAccounts() {
+                const grid = document.getElementById('accounts-grid');
+                const empty = document.getElementById('accounts-empty');
+                
+                if (accountsCache.length === 0) {
+                    grid.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
+                empty.classList.add('hidden');
+                grid.innerHTML = accountsCache.map(acc => {
+                    const bal = acc.balance ?? 0;
+                    const isPositive = bal >= 0;
+                    
+                    return `
+                        <div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-150 p-6 flex flex-col justify-between gap-4">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-bold text-slate-800 text-lg truncate pr-3" title="${acc.name}">${acc.name}</h4>
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 rounded-md px-2 py-1 tracking-wider border border-slate-200">Konto</span>
+                                </div>
+                                <p class="text-3xl font-black tracking-tight mt-3 ${isPositive ? 'text-emerald-600' : 'text-rose-600'}">
+                                    ${fmtPLN(bal)}
+                                </p>
+                                <p class="text-[10px] text-slate-400 mt-2 font-medium">Utworzone: ${fmtDate(acc.createdAt)}</p>
+                            </div>
+                            <div class="flex gap-2 border-t border-slate-100 pt-4 mt-2">
+                                <button onclick="exportCsv('${acc.id}')" class="flex-grow inline-flex justify-center items-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold px-3 py-2 rounded-lg text-xs shadow-sm transition-colors duration-150">
+                                    <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    CSV
+                                </button>
+                                <button onclick="confirmDeleteAccount('${acc.id}', '${acc.name}')" class="inline-flex justify-center items-center bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg p-2 transition-colors duration-150" title="Usuń konto">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Create account form handler
+            window.createAccount = async function (e) {
+                e.preventDefault();
+                const nameInput = document.getElementById('acc-name');
+                const name = nameInput.value.trim();
+                if (!name) return;
+                
+                try {
+                    await api('/api/v1/accounts', {
+                        method: 'POST',
+                        body: JSON.stringify({ name })
+                    });
+                    toast('Konto zostało pomyślnie utworzone.');
+                    toggleModal('account-modal');
+                    nameInput.value = '';
+                    await refreshCurrentTab();
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            // Trigger CSV transactions export for account
+            window.exportCsv = function (accountId) {
+                const url = `${API_BASE}/api/v1/accounts/${accountId}/transactions/export`;
+                window.location.href = url;
+                toast('Pobieranie pliku CSV z transakcjami...');
+            };
+
+            // Confirm account deletion
+            window.confirmDeleteAccount = function (id, name) {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-text').textContent = `Czy na pewno chcesz usunąć konto "${name}"? Konto zostanie usunięte tylko pod warunkiem, że nie ma przypisanych żadnych transakcji ani limitów.`;
+                
+                document.getElementById('confirm-btn').onclick = async () => {
+                    try {
+                        await api(`/api/v1/accounts/${id}`, { method: 'DELETE' });
+                        toast('Konto zostało usunięte.');
+                        toggleModal('confirm-modal');
+                        await refreshCurrentTab();
+                    } catch (err) {
+                        toast(err.message, 'error');
+                    }
+                };
+                toggleModal('confirm-modal');
+            };
+
+
+            /* --- TRANSACTIONS VIEW --- */
+            window.loadTransactions = async function (page = 0) {
+                transactionsPage = page;
+                const params = new URLSearchParams();
+                params.set('page', transactionsPage);
+                params.set('size', transactionsPageSize);
+                
+                // Sorting by date descending
+                params.set('sort', 'transactionDate,desc');
+
+                const accountId = document.getElementById('filter-account').value;
+                const category = document.getElementById('filter-category').value;
+                const dateFrom = document.getElementById('filter-from').value;
+                const dateTo = document.getElementById('filter-to').value;
+
+                if (accountId) params.set('accountId', accountId);
+                if (category) params.set('category', category);
+                if (dateFrom) params.set('from', dateFrom + 'T00:00:00');
+                if (dateTo) params.set('to', dateTo + 'T23:59:59');
+
+                try {
+                    const res = await api(`/api/v1/transactions?${params.toString()}`);
+                    const list = res && res.content ? res.content : [];
+                    const totalElements = res ? (res.totalElements ?? list.length) : 0;
+                    const totalPages = res ? (res.totalPages ?? 1) : 1;
+                    
+                    renderTransactions(list);
+                    updatePagination(totalPages, totalElements, list.length);
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            function renderTransactions(list) {
+                const tbody = document.getElementById('transactions-table-body');
+                const empty = document.getElementById('transactions-empty');
+                
+                if (list.length === 0) {
+                    tbody.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
+                empty.classList.add('hidden');
+                tbody.innerHTML = list.map(txn => {
+                    const isIncome = txn.type === 'INCOME';
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-slate-800 whitespace-nowrap">
+                                ${txn.accountName || '—'}
+                            </td>
+                            <td class="px-6 py-4 text-slate-500 whitespace-nowrap text-xs">
+                                ${fmtDate(txn.transactionDate)}
+                            </td>
+                            <td class="px-6 py-4 text-slate-700 font-medium">
+                                ${txn.description || '<span class="text-slate-300 italic">Brak opisu</span>'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${txn.category}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${isIncome ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}">
+                                    ${isIncome ? 'PRZYCHÓD' : 'WYDATEK'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-black whitespace-nowrap text-base ${isIncome ? 'text-emerald-600' : 'text-slate-900'}">
+                                ${isIncome ? '+' : '-'}${fmtPLN(txn.amount)}
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <button onclick="confirmDeleteTransaction('${txn.id}')" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Usuń transakcję">
+                                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            function updatePagination(totalPages, totalElements, visibleCount) {
+                document.getElementById('txn-count-visible').textContent = visibleCount;
+                document.getElementById('txn-count-total').textContent = totalElements;
+                document.getElementById('page-info').textContent = `Strona ${transactionsPage + 1} z ${totalPages || 1}`;
+                
+                const btnPrev = document.getElementById('btn-prev-page');
+                const btnNext = document.getElementById('btn-next-page');
+                
+                btnPrev.disabled = transactionsPage === 0;
+                btnNext.disabled = transactionsPage >= totalPages - 1;
+                
+                btnPrev.onclick = () => loadTransactions(transactionsPage - 1);
+                btnNext.onclick = () => loadTransactions(transactionsPage + 1);
+            }
+
+            window.clearFilters = function () {
+                document.getElementById('filter-account').value = '';
+                document.getElementById('filter-category').value = '';
+                document.getElementById('filter-from').value = '';
+                document.getElementById('filter-to').value = '';
+                loadTransactions(0);
+            };
+
+            window.openNewTransactionModal = function () {
+                // Pre-populate datetime-local input with local time
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                const localStr = (new Date(now - offset)).toISOString().slice(0, 16);
+                document.getElementById('txn-date').value = localStr;
+                
+                // Reset form fields
+                document.getElementById('txn-amount').value = '';
+                document.getElementById('txn-category').value = '';
+                document.getElementById('txn-description').value = '';
+                
+                // Select default account if available
+                const accSelect = document.getElementById('txn-account');
+                if (accSelect.options.length > 1 && !accSelect.value) {
+                    accSelect.selectedIndex = 1;
+                }
+                
+                setTxnType('EXPENSE');
+                toggleModal('transaction-modal');
+            };
+
+            window.setTxnType = function (type) {
+                txnTypeSelected = type;
+                document.getElementById('txn-type').value = type;
+                const incBtn = document.getElementById('type-income');
+                const expBtn = document.getElementById('type-expense');
+                
+                if (type === 'INCOME') {
+                    incBtn.className = 'flex-1 text-xs font-bold transition-all duration-150 bg-emerald-600 text-white shadow-inner';
+                    expBtn.className = 'flex-1 text-xs font-bold transition-all duration-150 text-slate-500 hover:text-slate-800';
+                } else {
+                    expBtn.className = 'flex-1 text-xs font-bold transition-all duration-150 bg-rose-600 text-white shadow-inner';
+                    incBtn.className = 'flex-1 text-xs font-bold transition-all duration-150 text-slate-500 hover:text-slate-800';
+                }
+            };
+
+            // Submit transaction
+            window.createTransaction = async function (e) {
+                e.preventDefault();
+                
+                let dateVal = document.getElementById('txn-date').value;
+                if (dateVal && dateVal.length === 16) {
+                    dateVal += ':00'; // Append seconds for LocalDateTime parser in backend
+                }
+                
+                const payload = {
+                    accountId: document.getElementById('txn-account').value,
+                    amount: parseFloat(document.getElementById('txn-amount').value),
+                    type: document.getElementById('txn-type').value,
+                    category: document.getElementById('txn-category').value.trim(),
+                    description: document.getElementById('txn-description').value.trim() || null,
+                    transactionDate: dateVal
+                };
+
+                try {
+                    const response = await api('/api/v1/transactions', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    // Toggle modal first
+                    toggleModal('transaction-modal');
+                    
+                    // Check warning budget limit response
+                    if (response && response.budgetWarning) {
+                        toast(response.budgetWarning, 'warning');
+                    } else {
+                        toast('Transakcja została zapisana.');
+                    }
+                    
+                    await refreshCurrentTab();
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            // Confirm transaction deletion
+            window.confirmDeleteTransaction = function (id) {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-text').textContent = 'Czy na pewno chcesz usunąć tę transakcję? Powiązane konto automatycznie zaktualizuje swoje saldo (wycofa kwotę).';
+                
+                document.getElementById('confirm-btn').onclick = async () => {
+                    try {
+                        await api(`/api/v1/transactions/${id}`, { method: 'DELETE' });
+                        toast('Transakcja została usunięta.');
+                        toggleModal('confirm-modal');
+                        await refreshCurrentTab();
+                    } catch (err) {
+                        toast(err.message, 'error');
+                    }
+                };
+                toggleModal('confirm-modal');
+            };
+
+
+            /* --- SUMMARY VIEW --- */
+            window.loadSummary = async function () {
+                const accountId = document.getElementById('summary-account').value;
+                const period = document.getElementById('summary-period').value; // yyyy-MM
+                
+                const reqState = document.getElementById('summary-request-state');
+                const content = document.getElementById('summary-content');
+                
+                if (!accountId) {
+                    reqState.classList.remove('hidden');
+                    content.classList.add('hidden');
+                    return;
+                }
+                
+                reqState.classList.add('hidden');
+                content.classList.remove('hidden');
+                
+                try {
+                    const res = await api(`/api/v1/summaries/account/${accountId}?period=${period}`);
+                    
+                    document.getElementById('summary-income-amount').textContent = fmtPLN(res.totalIncome);
+                    document.getElementById('summary-expenses-amount').textContent = fmtPLN(res.totalExpenses);
+                    document.getElementById('summary-net-amount').textContent = fmtPLN(res.balance);
+                    document.getElementById('summary-txn-count').textContent = `${res.transactionCount || 0} transakcji`;
+                    
+                    renderCategoryBreakdown(res.categoryExpenses || []);
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            function renderCategoryBreakdown(categories) {
+                const list = document.getElementById('summary-category-list');
+                const empty = document.getElementById('summary-category-empty');
+                
+                if (categories.length === 0) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
+                empty.classList.add('hidden');
+                // Sorting descending
+                const sorted = [...categories].sort((a, b) => b.total - a.total);
+                const maxVal = sorted.length > 0 ? sorted[0].total : 1;
+                
+                list.innerHTML = sorted.map(cat => {
+                    const relativePct = maxVal > 0 ? Math.round((cat.total / maxVal) * 100) : 0;
+                    return `
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-700">${cat.category}</span>
+                                <div class="text-right">
+                                    <span class="font-semibold text-slate-500 mr-2">${cat.percentage}% udziału</span>
+                                    <span class="font-black text-slate-900">${fmtPLN(cat.total)}</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                                <div class="bg-indigo-600 h-full rounded-full transition-all duration-300" style="width: ${relativePct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+
+            /* --- BUDGET LIMITS VIEW --- */
+            window.loadBudgets = async function () {
+                const today = new Date();
+                const currentPeriod = today.toISOString().slice(0, 7); // yyyy-MM
+                const accId = document.getElementById('filter-budget-account').value;
+                
+                let list = [];
+                try {
+                    if (accId) {
+                        const [budgets, summary] = await Promise.all([
+                            api(`/api/v1/budgets/account/${accId}`),
+                            api(`/api/v1/summaries/account/${accId}?period=${currentPeriod}`).catch(() => null)
+                        ]);
+                        
+                        const spentMap = {};
+                        if (summary && summary.categoryExpenses) {
+                            summary.categoryExpenses.forEach(ce => {
+                                spentMap[ce.category.toUpperCase()] = ce.total;
+                            });
+                        }
+                        
+                        list = (budgets || []).map(b => ({
+                            ...b,
+                            currentSpent: spentMap[b.category.toUpperCase()] || 0
+                        }));
+                    } else {
+                        // Gather budgets from all accounts in cache parallelly
+                        const promises = accountsCache.map(async (acc) => {
+                            try {
+                                const [budgets, summary] = await Promise.all([
+                                    api(`/api/v1/budgets/account/${acc.id}`),
+                                    api(`/api/v1/summaries/account/${acc.id}?period=${currentPeriod}`).catch(() => null)
+                                ]);
+                                
+                                const spentMap = {};
+                                if (summary && summary.categoryExpenses) {
+                                    summary.categoryExpenses.forEach(ce => {
+                                        spentMap[ce.category.toUpperCase()] = ce.total;
+                                    });
+                                }
+                                
+                                return (budgets || []).map(b => ({
+                                    ...b,
+                                    currentSpent: spentMap[b.category.toUpperCase()] || 0
+                                }));
+                            } catch (_) {
+                                return [];
+                            }
+                        });
+                        const results = await Promise.all(promises);
+                        list = results.flat();
+                    }
+                    
+                    renderBudgets(list);
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            function renderBudgets(budgets) {
+                const grid = document.getElementById('budgets-grid');
+                const empty = document.getElementById('budgets-empty');
+                
+                if (budgets.length === 0) {
+                    grid.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
+                empty.classList.add('hidden');
+                grid.innerHTML = budgets.map(b => {
+                    const limit = b.monthlyLimit ?? 0;
+                    const spent = b.currentSpent ?? 0;
+                    const pct = limit > 0 ? Math.min(Math.round((spent / limit) * 100), 100) : 0;
+                    const isExceeded = spent > limit;
+                    const isWarning = spent >= 0.8 * limit && spent <= limit;
+                    
+                    let barColor = 'bg-emerald-500';
+                    let textColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                    if (isExceeded) {
+                        barColor = 'bg-rose-500';
+                        textColor = 'text-rose-700 bg-rose-50 border-rose-200';
+                    } else if (isWarning) {
+                        barColor = 'bg-amber-500';
+                        textColor = 'text-amber-700 bg-amber-50 border-amber-200';
+                    }
+                    
+                    return `
+                        <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col justify-between gap-4">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                            ${b.category}
+                                        </span>
+                                        <p class="text-[10px] text-slate-400 mt-1 font-semibold">${b.accountName || 'Konto'}</p>
+                                    </div>
+                                    <button onclick="confirmDeleteBudget('${b.id}', '${b.category}')" class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-slate-50 transition-colors" title="Usuń limit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="mt-4">
+                                    <p class="text-2xl font-black text-slate-900">${fmtPLN(limit)}</p>
+                                    <p class="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Miesięczny Limit</p>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-1.5 border-t border-slate-100 pt-3">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-slate-500 font-medium">${fmtPLN(spent)} wydane</span>
+                                    <span class="font-bold border px-1.5 py-0.5 rounded text-[10px] ${textColor}">${pct}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                                    <div class="h-full rounded-full ${barColor} transition-all duration-300" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.openNewBudgetModal = function () {
+                document.getElementById('budget-category').value = '';
+                document.getElementById('budget-limit').value = '';
+                
+                const accSelect = document.getElementById('budget-account');
+                if (accSelect.options.length > 1 && !accSelect.value) {
+                    accSelect.selectedIndex = 1;
+                }
+                
+                toggleModal('budget-modal');
+            };
+
+            // Submit Budget Limit
+            window.createBudget = async function (e) {
+                e.preventDefault();
+                const payload = {
+                    accountId: document.getElementById('budget-account').value,
+                    category: document.getElementById('budget-category').value.trim(),
+                    monthlyLimit: parseFloat(document.getElementById('budget-limit').value)
+                };
+
+                try {
+                    await api('/api/v1/budgets', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    toast('Limit budżetowy został zapisany.');
+                    toggleModal('budget-modal');
+                    await refreshCurrentTab();
+                } catch (err) {
+                    toast(err.message, 'error');
+                }
+            };
+
+            // Confirm Budget Delete
+            window.confirmDeleteBudget = function (id, category) {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-text').textContent = `Czy na pewno chcesz usunąć limit budżetowy dla kategorii "${category}"?`;
+                
+                document.getElementById('confirm-btn').onclick = async () => {
+                    try {
+                        await api(`/api/v1/budgets/${id}`, { method: 'DELETE' });
+                        toast('Limit budżetowy został usunięty.');
+                        toggleModal('confirm-modal');
+                        await refreshCurrentTab();
+                    } catch (err) {
+                        toast(err.message, 'error');
+                    }
+                };
+                toggleModal('confirm-modal');
+            };
+
+
+            // Initial Setup
+            function init() {
+                // Default month values for summary tab (current month)
+                const today = new Date();
+                const currentMonthStr = today.toISOString().slice(0, 7); // yyyy-MM
+                document.getElementById('summary-period').value = currentMonthStr;
+
+                // Load initial tab
+                switchTab('accounts');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
 </body>
 </html>
