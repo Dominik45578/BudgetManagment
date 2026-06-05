@@ -7,37 +7,57 @@ Aplikacja do zarządzania budżetem osobistym oparta na architekturze mikroserwi
 ## Wymagania
 * Java 21
 * Docker + Docker Compose
-* Narzędzie make (opcjonalnie)
+* Narzędzie make (np. zainstalowane na Windowsie za pomocą Chocolatey: `choco install make`)
+
+---
+
+## Konfiguracja (.env)
+Zachowanie całej aplikacji można dowolnie modyfikować w pliku `.env` utworzonym na bazie `.env.example`.
 
 ---
 
 ## Architektura i Funkcjonalność
 
 * **eureka-server:** Service Discovery dla rejestracji i wyszukiwania instancji usług.
-* **api-gateway:** Bramka reaktywna (Spring WebFlux) realizująca centralny routing, obsługę nagłówka korelacji (Correlation ID) oraz konfigurację CORS. Posiada wdrożony **Circuit Breaker** (Resilience4j) oraz **Time Limiter** (3 sekundy) przekierowujące ruch do reaktywnego endpointu fallback w razie awarii.
-* **budget-service:** Główny serwis biznesowy (Servlet, JPA, Hibernate). Wdrożono w nim:
-  * Blokowanie pesymistyczne (`PESSIMISTIC_WRITE`) przy aktualizacji sald kont w transakcjach, co zabezpiecza przed wyścigami w środowisku wielowątkowym.
+* **api-gateway:** Bramka reaktywna realizująca centralny routing, obsługę nagłówka korelacji (Correlation ID) oraz konfigurację CORS. Posiada wdrożony failback oraz limiter czasu(3 sekundy) przekierowujące ruch do reaktywnego endpointu fallback w razie awarii.
+* **budget-service:** Główny serwis biznesowy. Wdrożono w nim:
+  * Blokowanie pesymistyczne przy aktualizacji sald kont w transakcjach, co zabezpiecza przed wyścigami w środowisku wielowątkowym/wiele instancyjnym
   * Walidację limitów wydatków per kategoria (informacja o przekroczeniu limitu zwracana jest w odpowiedzi transakcji).
-  * Eksport transakcji do formatu CSV zgodnie ze standardem RFC 4180.
-  * Obsługę błędów zgodną z standardem RFC 7807 (Problem Details).
+  * Eksport transakcji do formatu CSV
+  * Obsługę błędów
 
 ---
 
 ## Uruchamianie
 
-Skopiuj plik środowiskowy przed startem:
-```bash
-cp .env.example .env
+Głównym środowiskiem uruchomieniowym jest Windows. Przed startem skopiuj plik środowiskowy `.env.example` do `.env`.
+
+W klasycznej konsoli CMD:
+```cmd
+copy .env.example .env
 ```
 
-### Za pomocą make:
-```bash
-make network    # Tworzy sieć docker-network
-make build-up   # Buduje aplikacje Mavenem i uruchamia kontenery (app + monitoring)
-make up         # Uruchamia kontenery bez przebudowywania kodu
-make down       # Zatrzymuje kontenery
-make erase      # Zatrzymuje kontenery oraz usuwa sieć i wolumeny (czyści bazę)
+Lub w PowerShell:
+```powershell
+Copy-Item .env.example .env
 ```
+
+### Za pomocą make (pełna lista komend):
+* `make network` – Tworzy zewnętrzną sieć Docker (`budget-network`) – wymagane przed pierwszym startem.
+* `make infra` – Uruchamia tylko bazę danych PostgreSQL.
+* `make app` – Buduje obrazy i uruchamia usługi aplikacyjne (Eureka, Gateway, Budget Service).
+* `make obs` – Uruchamia stos monitoringu (Prometheus, Grafana, Loki).
+* `make build-up` – Kompiluje kod źródłowy, uruchamia bazę, buduje i odpala aplikacje oraz stos monitorowania.
+* `make up` – Uruchamia bazę, aplikacje i monitoring (bez ponownej kompilacji kodu).
+* `make infra-down` – Zatrzymuje bazę danych.
+* `make app-down` – Zatrzymuje usługi aplikacyjne.
+* `make obs-down` – Zatrzymuje monitoring.
+* `make down` – Zatrzymuje wszystkie kontenery w projekcie (baza, aplikacje, monitoring).
+* `make erase` – Zatrzymuje kontenery, usuwa sieć `budget-network` oraz czyści wolumeny.
+* `make tests` – Uruchamia testy jednostkowe i integracyjne w budget-service.
+* `make logs` – Podgląd logów kontenerów aplikacyjnych na żywo.
+* `make build` – Buduje lokalne pliki jar za pomocą Maven (pomijając testy).
+* `make clean` – Czyści foldery kompilacji target w Maven.
 
 ### Komendy ręczne (bez make):
 ```bash
