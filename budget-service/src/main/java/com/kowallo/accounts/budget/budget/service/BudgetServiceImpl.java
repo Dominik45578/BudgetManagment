@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +59,7 @@ public class BudgetServiceImpl implements BudgetService {
         
         return budgetRepository.findAllByAccountId(accountId).stream()
                 .map(budgetMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

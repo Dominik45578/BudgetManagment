@@ -33,6 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -90,6 +92,54 @@ class TransactionServiceImplTest {
     }
 
     @Test
+    void createTransaction_WhenIncome_ShouldUpdateBalanceAndReturnResponse() {
+        // given
+        UUID accountId = UUID.randomUUID();
+        CreateTransactionRequest request = new CreateTransactionRequest(accountId, BigDecimal.valueOf(200), TransactionType.INCOME, "Salary", "Bonus", LocalDateTime.now());
+        Account account = new Account("Savings");
+        account.applyTransaction(TransactionType.INCOME, BigDecimal.valueOf(100)); // previous balance 100
+        
+        Transaction savedTransaction = Transaction.builder().account(account).amount(request.amount()).type(request.type()).category(request.category()).transactionDate(request.transactionDate()).build();
+        TransactionResponse expectedResponse = new TransactionResponse(UUID.randomUUID(), accountId, "Savings", BigDecimal.valueOf(200), TransactionType.INCOME, "Salary", "Bonus", request.transactionDate(), LocalDateTime.now(), null);
+
+        when(accountRepository.findByIdForUpdate(accountId)).thenReturn(Optional.of(account));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+        when(transactionMapper.toResponse(eq(savedTransaction), isNull())).thenReturn(expectedResponse);
+
+        // when
+        TransactionResponse response = transactionService.createTransaction(request);
+
+        // then
+        assertThat(response).isEqualTo(expectedResponse);
+        assertThat(account.getBalance()).isEqualTo(BigDecimal.valueOf(300));
+        verify(accountRepository).save(account);
+    }
+
+    @Test
+    void createTransaction_WithExpenseNotExceedingBudget_ShouldReturnWithoutWarning() {
+        // given
+        UUID accountId = UUID.randomUUID();
+        CreateTransactionRequest request = new CreateTransactionRequest(accountId, BigDecimal.valueOf(100), TransactionType.EXPENSE, "Food", "Lunch", LocalDateTime.now());
+        Account account = new Account("Savings");
+        CategoryBudget budget = new CategoryBudget(account, "Food", BigDecimal.valueOf(500));
+        Transaction savedTransaction = Transaction.builder().account(account).amount(request.amount()).type(request.type()).category(request.category()).transactionDate(request.transactionDate()).build();
+        TransactionResponse expectedResponse = new TransactionResponse(UUID.randomUUID(), accountId, "Savings", BigDecimal.valueOf(100), TransactionType.EXPENSE, "Food", "Lunch", request.transactionDate(), LocalDateTime.now(), null);
+
+        when(accountRepository.findByIdForUpdate(accountId)).thenReturn(Optional.of(account));
+        when(categoryBudgetRepository.findByAccountIdAndCategoryIgnoreCase(accountId, "Food")).thenReturn(Optional.of(budget));
+        when(transactionRepository.sumExpensesByAccountAndCategoryInDateRange(eq(accountId), eq("Food"), any(), any())).thenReturn(BigDecimal.valueOf(300));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+        when(transactionMapper.toResponse(eq(savedTransaction), isNull())).thenReturn(expectedResponse);
+
+        // when
+        TransactionResponse response = transactionService.createTransaction(request);
+
+        // then
+        assertThat(response).isEqualTo(expectedResponse);
+        verify(accountRepository).save(account);
+    }
+
+    @Test
     void getTransaction_WhenNotFound_ShouldThrowException() {
         // given
         UUID id = UUID.randomUUID();
@@ -119,5 +169,21 @@ class TransactionServiceImplTest {
 
         // then
         assertThat(result.getContent()).containsExactly(response);
+    }
+
+    @Test
+    void getTransactions_WhenNoIdsFound_ShouldReturnEmptyPage() {
+        // given
+        Specification<Transaction> spec = mock(Specification.class);
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        when(transactionRepository.findAll(spec, pageable)).thenReturn(Page.empty(pageable));
+
+        // when
+        Page<TransactionResponse> result = transactionService.getTransactions(spec, pageable);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(transactionRepository, never()).findAllWithAccountByIds(any(), any());
     }
 }

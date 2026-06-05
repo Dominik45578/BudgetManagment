@@ -70,7 +70,7 @@ public class SummaryServiceImpl implements SummaryService {
                     return new CategoryExpenseDto(entry.getKey(), entry.getValue(), percentage);
                 })
                 .sorted((c1, c2) -> c2.total().compareTo(c1.total()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new SummaryResponse(totalIncome, totalExpenses, balance, transactions.size(), categoryExpenses);
     }

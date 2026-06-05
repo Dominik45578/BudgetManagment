@@ -69,6 +69,28 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void createAccount_WithWhitespacesInName_ShouldTrimAndSave() {
+        // given
+        CreateAccountRequest request = new CreateAccountRequest("  Savings  ");
+        Account savedAccount = new Account("Savings");
+        AccountResponse expectedResponse = new AccountResponse(UUID.randomUUID(), "Savings", BigDecimal.ZERO, LocalDateTime.now());
+        
+        when(accountRepository.existsByNameIgnoreCase("Savings")).thenReturn(false);
+        when(accountRepository.save(any(Account.class))).thenReturn(savedAccount);
+        when(accountMapper.toResponse(savedAccount)).thenReturn(expectedResponse);
+
+        // when
+        AccountResponse response = accountService.createAccount(request);
+
+        // then
+        assertThat(response).isEqualTo(expectedResponse);
+        
+        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+        verify(accountRepository).save(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getName()).isEqualTo("Savings");
+    }
+
+    @Test
     void createAccount_WhenNameExists_ShouldThrowException() {
         // given
         CreateAccountRequest request = new CreateAccountRequest("Savings");

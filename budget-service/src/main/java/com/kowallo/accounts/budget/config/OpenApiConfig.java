@@ -30,8 +30,7 @@ public class OpenApiConfig {
                                 .email("dominikkoralik59@gmail.com")))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("API Gateway (Standard entry point)"),
-                        new Server().url("http://localhost:8081").description("Direct Microservice URL (Development)"),
-                        new Server().url("http://localhost:8761").description("Eureka Server URL")
+                        new Server().url("http://localhost:8081").description("Direct Microservice URL (Development)")
                 )
 
                 );

@@ -140,6 +140,17 @@ class BudgetServiceImplTest {
     }
 
     @Test
+    void getBudgetsByAccountId_WhenAccountNotFound_ShouldThrowException() {
+        // given
+        UUID accountId = UUID.randomUUID();
+        when(accountRepository.existsById(accountId)).thenReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> budgetService.getBudgetsByAccountId(accountId))
+                .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
     void deleteBudget_WhenExists_ShouldDelete() {
         // given
         UUID budgetId = UUID.randomUUID();

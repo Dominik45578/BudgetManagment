@@ -43,10 +43,11 @@ class SummaryServiceImplTest {
         YearMonth period = YearMonth.of(2026, 6);
         when(accountRepository.existsById(accountId)).thenReturn(true);
         
-        Transaction t1 = Transaction.builder().amount(BigDecimal.valueOf(1000)).type(TransactionType.INCOME).category("Salary").build();
-        Transaction t2 = Transaction.builder().amount(BigDecimal.valueOf(200)).type(TransactionType.EXPENSE).category("Groceries").build();
-        Transaction t3 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Groceries").build();
-        Transaction t4 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Transport").build();
+        LocalDateTime date = LocalDateTime.now();
+        Transaction t1 = Transaction.builder().amount(BigDecimal.valueOf(1000)).type(TransactionType.INCOME).category("Salary").transactionDate(date).build();
+        Transaction t2 = Transaction.builder().amount(BigDecimal.valueOf(200)).type(TransactionType.EXPENSE).category("Groceries").transactionDate(date).build();
+        Transaction t3 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Groceries").transactionDate(date).build();
+        Transaction t4 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Transport").transactionDate(date).build();
         
         when(transactionRepository.findAllByAccountIdAndDateRange(eq(accountId), any(), any())).thenReturn(List.of(t1, t2, t3, t4));
 
