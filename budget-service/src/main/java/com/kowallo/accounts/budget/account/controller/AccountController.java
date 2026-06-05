@@ -39,9 +39,9 @@ public class AccountController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new account", description = "Creates a new financial account with a unique name.")
     @ApiResponses({
-            @ApiResponse(responseCode = "210", description = "Account created successfully"),
+            @ApiResponse(responseCode = "201", description = "Account created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request payload"),
-            @ApiResponse(responseCode = "400", description = "Account with this name already exists")
+            @ApiResponse(responseCode = "409", description = "Account with this name already exists")
     })
     public AccountResponse createAccount(@Valid @RequestBody CreateAccountRequest request) {
         return accountService.createAccount(request);
@@ -69,9 +69,9 @@ public class AccountController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete account by ID", description = "Deletes an account if it doesn't have any existing transactions.")
     @ApiResponses({
-            @ApiResponse(responseCode = "240", description = "Account deleted successfully"),
+            @ApiResponse(responseCode = "204", description = "Account deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Account not found"),
-            @ApiResponse(responseCode = "400", description = "Account has existing transactions")
+            @ApiResponse(responseCode = "409", description = "Account has existing transactions")
     })
     public void deleteAccount(
             @PathVariable @Parameter(description = "UUID of the account to delete") UUID id) {
