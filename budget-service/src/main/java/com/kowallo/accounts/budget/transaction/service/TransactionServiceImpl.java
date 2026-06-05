@@ -113,4 +113,17 @@ public class TransactionServiceImpl implements TransactionService {
                 
         return fetchPage.map(transactionMapper::toResponse);
     }
+
+    @Override
+    @Transactional
+    public void deleteTransaction(UUID id) {
+        Transaction transaction = transactionRepository.findByIdWithAccount(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+                
+        Account account = transaction.getAccount();
+        account.revertTransaction(transaction.getType(), transaction.getAmount());
+        
+        transactionRepository.delete(transaction);
+        accountRepository.save(account);
+    }
 }

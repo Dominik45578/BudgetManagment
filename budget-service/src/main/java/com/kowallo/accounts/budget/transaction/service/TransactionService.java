@@ -16,4 +16,6 @@ public interface TransactionService {
     TransactionResponse getTransaction(UUID id);
     
     Page<TransactionResponse> getTransactions(Specification<Transaction> spec, Pageable pageable);
+    
+    void deleteTransaction(UUID id);
 }

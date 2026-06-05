@@ -186,4 +186,23 @@ class TransactionServiceImplTest {
         assertThat(result).isEmpty();
         verify(transactionRepository, never()).findAllWithAccountByIds(any(), any());
     }
+
+    @Test
+    void deleteTransaction_ShouldRevertBalanceAndDeleteTransaction() {
+        // given
+        UUID id = UUID.randomUUID();
+        Account account = new Account("Savings");
+        account.applyTransaction(TransactionType.EXPENSE, BigDecimal.valueOf(50));
+        Transaction transaction = Transaction.builder().account(account).amount(BigDecimal.valueOf(50)).type(TransactionType.EXPENSE).category("Food").transactionDate(LocalDateTime.now()).build();
+        
+        when(transactionRepository.findByIdWithAccount(id)).thenReturn(Optional.of(transaction));
+
+        // when
+        transactionService.deleteTransaction(id);
+
+        // then
+        assertThat(account.getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
+        verify(transactionRepository).delete(transaction);
+        verify(accountRepository).save(account);
+    }
 }
