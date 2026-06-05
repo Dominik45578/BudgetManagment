@@ -26,4 +26,21 @@ public final class TransactionSpecification {
     public static Specification<Transaction> forAccount(UUID accountId) {
         return (root, query, cb) -> cb.equal(root.get("account").get("id"), accountId);
     }
+
+    public static Specification<Transaction> build(UUID accountId, String category, LocalDateTime from, LocalDateTime to) {
+        Specification<Transaction> spec = null;
+        if (accountId != null) {
+            spec = forAccount(accountId);
+        }
+        if (category != null && !category.isBlank()) {
+            spec = spec == null ? hasCategory(category) : spec.and(hasCategory(category));
+        }
+        if (from != null) {
+            spec = spec == null ? dateFrom(from) : spec.and(dateFrom(from));
+        }
+        if (to != null) {
+            spec = spec == null ? dateTo(to) : spec.and(dateTo(to));
+        }
+        return spec;
+    }
 }
