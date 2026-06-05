@@ -25,4 +25,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
         countQuery = "SELECT COUNT(t) FROM Transaction t WHERE t.id IN :ids"
     )
     Page<Transaction> findAllWithAccountByIds(@Param("ids") Iterable<UUID> ids, Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+           "WHERE t.account.id = :accountId AND LOWER(t.category) = LOWER(:category) " +
+           "AND t.type = 'EXPENSE' AND t.transactionDate >= :startDate AND t.transactionDate < :endDate")
+    java.math.BigDecimal sumExpensesByAccountAndCategoryInDateRange(
+            @Param("accountId") UUID accountId,
+            @Param("category") String category,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate
+    );
+
+    @Query("SELECT t FROM Transaction t WHERE t.account.id = :accountId AND t.transactionDate >= :startDate AND t.transactionDate < :endDate")
+    java.util.List<Transaction> findAllByAccountIdAndDateRange(
+            @Param("accountId") UUID accountId,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate
+    );
 }
