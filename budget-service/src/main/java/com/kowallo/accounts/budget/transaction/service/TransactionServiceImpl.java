@@ -13,6 +13,7 @@ import com.kowallo.accounts.budget.transaction.model.TransactionType;
 import com.kowallo.accounts.budget.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -106,12 +108,16 @@ public class TransactionServiceImpl implements TransactionService {
         if (idPage.isEmpty()) {
             return Page.empty(pageable);
         }
-        
-        Page<Transaction> fetchPage = transactionRepository.findAllWithAccountByIds(
-                idPage.map(Transaction::getId).getContent(), 
-                pageable);
-                
-        return fetchPage.map(transactionMapper::toResponse);
+
+        List<Transaction> fetched = transactionRepository.findAllWithAccountByIds(
+                idPage.map(Transaction::getId).getContent(),
+                pageable).getContent();
+
+        List<TransactionResponse> responses = fetched.stream()
+                .map(transactionMapper::toResponse)
+                .toList();
+
+        return new PageImpl<>(responses, pageable, idPage.getTotalElements());
     }
 
     @Override

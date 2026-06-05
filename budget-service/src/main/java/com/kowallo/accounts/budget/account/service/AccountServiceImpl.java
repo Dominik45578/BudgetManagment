@@ -5,7 +5,9 @@ import com.kowallo.accounts.budget.account.dto.CreateAccountRequest;
 import com.kowallo.accounts.budget.account.mapper.AccountMapper;
 import com.kowallo.accounts.budget.account.model.Account;
 import com.kowallo.accounts.budget.account.repository.AccountRepository;
+import com.kowallo.accounts.budget.budget.repository.CategoryBudgetRepository;
 import com.kowallo.accounts.budget.common.exception.AccountAlreadyExistsException;
+import com.kowallo.accounts.budget.common.exception.AccountHasBudgetsException;
 import com.kowallo.accounts.budget.common.exception.AccountHasTransactionsException;
 import com.kowallo.accounts.budget.common.exception.AccountNotFoundException;
 import com.kowallo.accounts.budget.transaction.repository.TransactionRepository;
@@ -23,6 +25,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final CategoryBudgetRepository categoryBudgetRepository;
     private final AccountMapper accountMapper;
 
     @Override
@@ -62,6 +65,10 @@ public class AccountServiceImpl implements AccountService {
                 
         if (transactionRepository.existsByAccountId(id)) {
             throw new AccountHasTransactionsException(id);
+        }
+
+        if (categoryBudgetRepository.existsByAccountId(id)) {
+            throw new AccountHasBudgetsException(id);
         }
         
         accountRepository.delete(account);

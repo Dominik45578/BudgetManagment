@@ -5,7 +5,9 @@ import com.kowallo.accounts.budget.account.dto.CreateAccountRequest;
 import com.kowallo.accounts.budget.account.mapper.AccountMapper;
 import com.kowallo.accounts.budget.account.model.Account;
 import com.kowallo.accounts.budget.account.repository.AccountRepository;
+import com.kowallo.accounts.budget.budget.repository.CategoryBudgetRepository;
 import com.kowallo.accounts.budget.common.exception.AccountAlreadyExistsException;
+import com.kowallo.accounts.budget.common.exception.AccountHasBudgetsException;
 import com.kowallo.accounts.budget.common.exception.AccountHasTransactionsException;
 import com.kowallo.accounts.budget.common.exception.AccountNotFoundException;
 import com.kowallo.accounts.budget.transaction.repository.TransactionRepository;
@@ -39,6 +41,9 @@ class AccountServiceImplTest {
 
     @Mock
     private TransactionRepository transactionRepository;
+
+    @Mock
+    private CategoryBudgetRepository categoryBudgetRepository;
 
     @Mock
     private AccountMapper accountMapper;
@@ -158,12 +163,30 @@ class AccountServiceImplTest {
         
         when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
         when(transactionRepository.existsByAccountId(accountId)).thenReturn(false);
+        when(categoryBudgetRepository.existsByAccountId(accountId)).thenReturn(false);
 
         // when
         accountService.deleteAccount(accountId);
 
         // then
         verify(accountRepository).delete(account);
+    }
+
+    @Test
+    void deleteAccount_WhenHasBudgets_ShouldThrowException() {
+        // given
+        UUID accountId = UUID.randomUUID();
+        Account account = new Account("Savings");
+
+        when(accountRepository.findById(accountId)).thenReturn(Optional.of(account));
+        when(transactionRepository.existsByAccountId(accountId)).thenReturn(false);
+        when(categoryBudgetRepository.existsByAccountId(accountId)).thenReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> accountService.deleteAccount(accountId))
+                .isInstanceOf(AccountHasBudgetsException.class);
+
+        verify(accountRepository, never()).delete(any());
     }
 
     @Test

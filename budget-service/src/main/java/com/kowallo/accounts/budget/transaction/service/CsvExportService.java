@@ -27,7 +27,7 @@ public class CsvExportService {
 
         List<Transaction> transactions = transactionRepository.findAllByAccountIdOrderByTransactionDateDesc(accountId);
 
-        StringJoiner csv = new StringJoiner("\n");
+        StringJoiner csv = new StringJoiner("\r\n");
         csv.add("ID,Date,Amount,Type,Category,Description");
 
         for (Transaction t : transactions) {
@@ -41,13 +41,13 @@ public class CsvExportService {
             ));
         }
 
-        return csv.toString();
+        return csv.toString() + "\r\n";
     }
 
     private String escapeCsvField(String value) {
         if (value == null) return "";
         String escaped = value.replace("\"", "\"\"");
-        if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\"")) {
+        if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\r") || escaped.contains("\"")) {
             return "\"" + escaped + "\"";
         }
         return escaped;

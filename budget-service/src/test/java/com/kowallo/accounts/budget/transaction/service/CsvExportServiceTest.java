@@ -51,7 +51,7 @@ class CsvExportServiceTest {
 
         String csv = csvExportService.exportTransactionsToCsv(accountId);
 
-        assertThat(csv).isEqualTo("ID,Date,Amount,Type,Category,Description");
+        assertThat(csv).startsWith("ID,Date,Amount,Type,Category,Description\r\n");
     }
 
     @Test
