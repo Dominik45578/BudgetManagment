@@ -2,8 +2,8 @@ package com.kowallo.accounts.budget.summary.service;
 
 import com.kowallo.accounts.budget.account.repository.AccountRepository;
 import com.kowallo.accounts.budget.common.exception.AccountNotFoundException;
+import com.kowallo.accounts.budget.summary.dto.CategorySumDto;
 import com.kowallo.accounts.budget.summary.dto.SummaryResponse;
-import com.kowallo.accounts.budget.transaction.model.Transaction;
 import com.kowallo.accounts.budget.transaction.model.TransactionType;
 import com.kowallo.accounts.budget.transaction.repository.TransactionRepository;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SummaryServiceImplTest {
@@ -37,44 +36,45 @@ class SummaryServiceImplTest {
     private SummaryServiceImpl summaryService;
 
     @Test
-    void getAccountSummary_WhenExists_ShouldReturnCalculatedSummary() {
+    void getAccountSummary_WhenExists_ShouldReturnAggregatedSummary() {
         // given
         UUID accountId = UUID.randomUUID();
         YearMonth period = YearMonth.of(2026, 6);
+
         when(accountRepository.existsById(accountId)).thenReturn(true);
-        
-        LocalDateTime date = LocalDateTime.now();
-        Transaction t1 = Transaction.builder().amount(BigDecimal.valueOf(1000)).type(TransactionType.INCOME).category("Salary").transactionDate(date).build();
-        Transaction t2 = Transaction.builder().amount(BigDecimal.valueOf(200)).type(TransactionType.EXPENSE).category("Groceries").transactionDate(date).build();
-        Transaction t3 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Groceries").transactionDate(date).build();
-        Transaction t4 = Transaction.builder().amount(BigDecimal.valueOf(100)).type(TransactionType.EXPENSE).category("Transport").transactionDate(date).build();
-        
-        when(transactionRepository.findAllByAccountIdAndDateRange(eq(accountId), any(), any())).thenReturn(List.of(t1, t2, t3, t4));
+        when(transactionRepository.sumByAccountAndTypeInDateRange(eq(accountId), eq(TransactionType.INCOME), any(), any()))
+                .thenReturn(BigDecimal.valueOf(1000));
+        when(transactionRepository.sumByAccountAndTypeInDateRange(eq(accountId), eq(TransactionType.EXPENSE), any(), any()))
+                .thenReturn(BigDecimal.valueOf(400));
+        when(transactionRepository.countByAccountIdAndDateRange(eq(accountId), any(), any()))
+                .thenReturn(4L);
+        when(transactionRepository.sumExpensesByCategoryInDateRange(eq(accountId), any(), any()))
+                .thenReturn(List.of(
+                        new CategorySumDto("Groceries", BigDecimal.valueOf(300)),
+                        new CategorySumDto("Transport", BigDecimal.valueOf(100))
+                ));
 
         // when
         SummaryResponse response = summaryService.getAccountSummary(accountId, period);
 
         // then
-        assertThat(response.totalIncome()).isEqualTo(BigDecimal.valueOf(1000));
-        assertThat(response.totalExpenses()).isEqualTo(BigDecimal.valueOf(400));
-        assertThat(response.balance()).isEqualTo(BigDecimal.valueOf(600));
-        assertThat(response.transactionCount()).isEqualTo(4);
+        assertThat(response.totalIncome()).isEqualByComparingTo(BigDecimal.valueOf(1000));
+        assertThat(response.totalExpenses()).isEqualByComparingTo(BigDecimal.valueOf(400));
+        assertThat(response.balance()).isEqualByComparingTo(BigDecimal.valueOf(600));
+        assertThat(response.transactionCount()).isEqualTo(4L);
         assertThat(response.categoryExpenses()).hasSize(2);
         assertThat(response.categoryExpenses().get(0).category()).isEqualTo("Groceries");
-        assertThat(response.categoryExpenses().get(0).total()).isEqualTo(BigDecimal.valueOf(300));
-        assertThat(response.categoryExpenses().get(0).percentage()).isEqualTo(BigDecimal.valueOf(75).setScale(2)); // 300 / 400 * 100
+        assertThat(response.categoryExpenses().get(0).total()).isEqualByComparingTo(BigDecimal.valueOf(300));
+        assertThat(response.categoryExpenses().get(0).percentage()).isEqualByComparingTo("75.00");
         assertThat(response.categoryExpenses().get(1).category()).isEqualTo("Transport");
-        assertThat(response.categoryExpenses().get(1).total()).isEqualTo(BigDecimal.valueOf(100));
-        assertThat(response.categoryExpenses().get(1).percentage()).isEqualTo(BigDecimal.valueOf(25).setScale(2)); // 100 / 400 * 100
+        assertThat(response.categoryExpenses().get(1).percentage()).isEqualByComparingTo("25.00");
     }
 
     @Test
     void getAccountSummary_WhenAccountNotFound_ShouldThrowException() {
-        // given
         UUID accountId = UUID.randomUUID();
         when(accountRepository.existsById(accountId)).thenReturn(false);
 
-        // when & then
         assertThatThrownBy(() -> summaryService.getAccountSummary(accountId, YearMonth.now()))
                 .isInstanceOf(AccountNotFoundException.class);
     }
