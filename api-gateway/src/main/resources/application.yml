@@ -34,3 +34,22 @@ logging:
   level:
     com.kowallo.accounts.gateway: DEBUG
     org.springframework.cloud.gateway: INFO
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+    instances:
+      budgetServiceCircuitBreaker:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+    instances:
+      budgetServiceCircuitBreaker:
+        baseConfig: default

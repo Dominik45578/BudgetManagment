@@ -16,21 +16,33 @@ public class RouteConfig {
                 // Budget Service — Accounts API
                 .route("budget-accounts-route", r -> r
                         .path("/api/v1/accounts/**")
+                        .filters(f -> f.circuitBreaker(c -> c
+                                .setName("budgetServiceCircuitBreaker")
+                                .setFallbackUri("forward:/fallback")))
                         .uri("lb://budget-service"))
 
                 // Budget Service — Transactions API
                 .route("budget-transactions-route", r -> r
                         .path("/api/v1/transactions/**")
+                        .filters(f -> f.circuitBreaker(c -> c
+                                .setName("budgetServiceCircuitBreaker")
+                                .setFallbackUri("forward:/fallback")))
                         .uri("lb://budget-service"))
 
                 // Budget Service — Budget limits API
                 .route("budget-limits-route", r -> r
                         .path("/api/v1/budgets/**")
+                        .filters(f -> f.circuitBreaker(c -> c
+                                .setName("budgetServiceCircuitBreaker")
+                                .setFallbackUri("forward:/fallback")))
                         .uri("lb://budget-service"))
 
                 // Budget Service — Summary / Reports API
                 .route("budget-summary-route", r -> r
-                        .path("/api/v1/summary/**")
+                        .path("/api/v1/summaries/**")
+                        .filters(f -> f.circuitBreaker(c -> c
+                                .setName("budgetServiceCircuitBreaker")
+                                .setFallbackUri("forward:/fallback")))
                         .uri("lb://budget-service"))
 
                 // Budget Service — Swagger/OpenAPI docs
