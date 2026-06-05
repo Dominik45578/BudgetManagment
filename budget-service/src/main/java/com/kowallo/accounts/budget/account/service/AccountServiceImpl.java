@@ -28,11 +28,12 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public AccountResponse createAccount(CreateAccountRequest request) {
-        if (accountRepository.existsByNameIgnoreCase(request.name())) {
-            throw new AccountAlreadyExistsException(request.name());
+        String trimmedName = request.name().trim();
+        if (accountRepository.existsByNameIgnoreCase(trimmedName)) {
+            throw new AccountAlreadyExistsException(trimmedName);
         }
 
-        Account account = new Account(request.name());
+        Account account = new Account(trimmedName);
         Account savedAccount = accountRepository.save(account);
         
         return accountMapper.toResponse(savedAccount);

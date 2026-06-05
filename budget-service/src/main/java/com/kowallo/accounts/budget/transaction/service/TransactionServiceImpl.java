@@ -38,21 +38,33 @@ public class TransactionServiceImpl implements TransactionService {
         Account account = accountRepository.findByIdForUpdate(request.accountId())
                 .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
+        String trimmedCategory = request.category().trim();
+        String trimmedDescription = request.description() != null ? request.description().trim() : null;
+
+        CreateTransactionRequest cleanRequest = new CreateTransactionRequest(
+                request.accountId(),
+                request.amount(),
+                request.type(),
+                trimmedCategory,
+                trimmedDescription,
+                request.transactionDate()
+        );
+
         String budgetWarning = null;
-        if (request.type() == TransactionType.EXPENSE) {
-            budgetWarning = checkBudgetWarning(request);
+        if (cleanRequest.type() == TransactionType.EXPENSE) {
+            budgetWarning = checkBudgetWarning(cleanRequest);
         }
 
         Transaction transaction = Transaction.builder()
                 .account(account)
-                .amount(request.amount())
-                .type(request.type())
-                .category(request.category())
-                .description(request.description())
-                .transactionDate(request.transactionDate())
+                .amount(cleanRequest.amount())
+                .type(cleanRequest.type())
+                .category(cleanRequest.category())
+                .description(cleanRequest.description())
+                .transactionDate(cleanRequest.transactionDate())
                 .build();
 
-        account.applyTransaction(request.type(), request.amount());
+        account.applyTransaction(cleanRequest.type(), cleanRequest.amount());
 
         Transaction savedTransaction = transactionRepository.save(transaction);
         accountRepository.save(account);

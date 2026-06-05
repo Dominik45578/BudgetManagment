@@ -32,11 +32,12 @@ public class BudgetServiceImpl implements BudgetService {
         Account account = accountRepository.findById(request.accountId())
                 .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
-        if (budgetRepository.findByAccountIdAndCategoryIgnoreCase(request.accountId(), request.category()).isPresent()) {
-            throw new BudgetAlreadyExistsException(request.accountId(), request.category());
+        String trimmedCategory = request.category().trim();
+        if (budgetRepository.findByAccountIdAndCategoryIgnoreCase(request.accountId(), trimmedCategory).isPresent()) {
+            throw new BudgetAlreadyExistsException(request.accountId(), trimmedCategory);
         }
 
-        CategoryBudget budget = new CategoryBudget(account, request.category(), request.monthlyLimit());
+        CategoryBudget budget = new CategoryBudget(account, trimmedCategory, request.monthlyLimit());
         CategoryBudget savedBudget = budgetRepository.save(budget);
 
         return budgetMapper.toResponse(savedBudget);
